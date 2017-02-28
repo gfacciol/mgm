@@ -1,23 +1,36 @@
-CC=gcc -std=c99
-LDFLAGS=-lpng -ltiff -ljpeg
-CFLAGS=-Iiio -O3 -DNDEBUG -ffast-math -fopenmp
+CFLAGS=-Iiio -O3 -DNDEBUG -ffast-math
+LDFLAGS=-lpng -ltiff -ljpeg -lm
 #CFLAGS=-Iiio -g
-CXX=g++
 CXXFLAGS=$(CFLAGS)
+
+# The following conditional statement appends "-std=gnu99" to CFLAGS when the
+# compiler does not define __STDC_VERSION__.  The idea is that many older
+# compilers are able to compile standard C when given that option.
+# This hack seems to work for all versions of gcc, clang and icc.
+CVERSION = $(shell $(CC) -dM -E - < /dev/null | grep __STDC_VERSION__)
+ifeq ($(CVERSION),)
+CFLAGS := $(CFLAGS) -std=gnu99
+endif
+
+# use OpenMP only if not clang
+ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"), 0)
+CFLAGS := $(CFLAGS) -fopenmp
+endif
+
 
 PROGRAMS=mgm
 
 all: iio.o $(PROGRAMS)
 
 iio.o: iio/iio.c
-	$(CC) $(CFLAGS)  -c $^ -o $@
+	$(CC) $(CFLAGS) -c $^ -o $@
 	$(CC) $(CFLAGS) -o iion iio/iio_test_named.c iio.o $(LDFLAGS)
 
 % : %.c iio.o
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 % : %.cc img.cc point.cc iio.o
-	$(CXX) $(CXXFLAGS) -DTEST_MAIN $^ -o $@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -f $(PROGRAMS) iio.o iion
