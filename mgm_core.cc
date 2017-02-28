@@ -504,7 +504,7 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
       // scan in the horizontal direction left to right
       for(int ii=0; ii<maxii+2*maxjj; ii++) {
       #pragma omp parallel for schedule(static,1)
-      for(int jj=0; jj<maxjj; jj++) 
+      for(int jj=0; jj<maxjj; jj++)
       {
          // ensure diagonal scan (slope 2)
          int x=ii -2*jj, y=jj;
@@ -544,7 +544,7 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
          if(TSGM_2LMIN>0) { // THIS IS A LEGACY FEATURE
             //   update_cost2L2(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], P1, P2);
             update_cost2Lmin(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], P1, P2);
-         } 
+         }
          else if(USE_IMAGE_DEPENDENT_WEIGHTS) {      // IMAGE DEPENDENT WEIGHTS
 
             #define val(u, p, ch)  u.data[(p.x) + (u.nx)*(p.y) + (ch)*(u.npix)]
@@ -553,7 +553,7 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
             float DeltaI3 = val(in_w, p, pass_to_channel_3[pass]);
             float DeltaI4 = val(in_w, p, pass_to_channel_4[pass]);
             #undef val
-            if(USE_FELZENSZWALB_POTENTIALS>0) 
+            if(USE_FELZENSZWALB_POTENTIALS>0)
                update_costW_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2, 
                      DeltaI1, DeltaI2, DeltaI3, DeltaI4, MGM);
             else
@@ -598,7 +598,7 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
          if (SGM_FIX_OVERCOUNT==1)
             S[i].set_nolock(o, S[i][o] - (NDIR -1) * CC[i][o]);
 
-         if(isfinite(S[i][o]))
+         if(std::isfinite(S[i][o]))
          if(minL > S[i][o]) {
             minL = S[i][o];
             minP = o;
@@ -816,7 +816,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
          if (SGM_FIX_OVERCOUNT==1)
             S[i].set_nolock(o, S[i][o] - (NDIR -1) * CC[i][o]);
 
-         if(isfinite(S[i][o]))
+         if(std::isfinite(S[i][o]))
          if(minL > S[i][o]) {
             minL = S[i][o];
             minP = o;

@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <vector>
 #include <cstring>
+#include <cmath>
 #include "assert.h"
 
 #include "smartparameter.h"
@@ -137,7 +138,7 @@ std::pair<float, float> update_dmin_dmax(struct Img outoff, struct Img *dminI, s
       for (int di=-r;di<=r;di++)
       {
          float v = valneumann(outoff, i+di, j+dj);
-         if (isfinite(v)) {
+         if (std::isfinite(v)) {
             dmin = fmin( dmin, v - slack );
             dmax = fmax( dmax, v + slack );
          } else {
@@ -145,7 +146,7 @@ std::pair<float, float> update_dmin_dmax(struct Img outoff, struct Img *dminI, s
             dmax = fmax( dmax, gmax + slack );
          }
       }
-      if (isfinite(dmin)) { 
+      if (std::isfinite(dmin)) {
          dminI2[i+j*nx] = dmin; dmaxI2[i+j*nx] = dmax; 
       }
 
@@ -227,7 +228,7 @@ int main(int argc, char* argv[])
 	
 	
 	//read the parameters
-	int i = 1;
+   int i = 1;
    char *in_min_disp_file = pick_option(&argc, &argv, (char*) "m", (char*) "");
    char *in_max_disp_file = pick_option(&argc, &argv, (char*) "M", (char*) "");
    int dmin = atoi(pick_option(&argc, &argv, (char*) "r", (char*) "-30"));
@@ -323,7 +324,7 @@ int main(int argc, char* argv[])
 
 
 	// save the disparity without LR
-	if( ! strcmp (nolr_disp_file, "") == 0 ) 
+	if( 0 != strcmp (nolr_disp_file, "") )
       iio_write_vector_split(nolr_disp_file, outoff);
 
    
