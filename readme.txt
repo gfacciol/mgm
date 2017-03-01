@@ -88,3 +88,6 @@ Compilation
 
    MEDIAN=1 CENSUS_NCC_WIN=3 USE_TRUNCATED_LINEAR_POTENTIALS=1  TSGM=3 ./mgm -P2 20000 -P1 2 -r -120 -R 30 -t census -s vfit -O 8 data/fountain23-im?.png /tmp/{disp,cost}.tif
 
+   The following line runs a similar experiment with a satellite image 
+
+   OMP_NUM_THREADS=4 MEDIAN=1 CENSUS_NCC_WIN=5 TSGM=3 ./mgm -r -22 -R 19 -s vfit -t census -O 8 data/rectified_{ref,sec}.tif /tmp/{disp,cost}.tif
