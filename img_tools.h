@@ -1,7 +1,7 @@
 /* Copyright (C) 2015, Gabriele Facciolo <facciolo@cmla.ens-cachan.fr>,
  *                     Carlo de Franchis <carlo.de-franchis@ens-cachan.fr>,
  *                     Enric Meinhardt <enric.meinhardt@cmla.ens-cachan.fr>*/
-//// a structure to wrap images 
+//// a structure to wrap images
 #ifndef IMG_TOOLS_H_
 #define IMG_TOOLS_H_
 
@@ -34,9 +34,9 @@ void iio_write_vector_split(char *nm, struct Img &out)
 }
 
 
-void remove_nonfinite_values_Img(struct Img &u, float newval) 
+void remove_nonfinite_values_Img(struct Img &u, float newval)
 {
-   for(int i=0;i<u.npix*u.nch;i++) 
+   for(int i=0;i<u.npix*u.nch;i++)
       if (!std::isfinite(u[i])) u[i] = newval;
 }
 
@@ -74,7 +74,7 @@ inline float valzero(const struct Img &u, const int x, const int y, const int ch
 }
 
 inline float valneumann(const struct Img &u, const int x, const int y, const int ch=0)
-{  
+{
    int xx=x, yy=y;
    xx = x >=  0  ? xx : 0;
    xx = x < u.nx ? xx : u.nx - 1;
@@ -117,7 +117,7 @@ struct Img apply_filter(struct Img &u, struct Img &filter) {
       for (int ii = 0; ii < filter.nx ; ii++) {
          v += valneumann(u, i + ii - hfnx,
                             j + jj - hfny,
-                            c + cc - hfnch) *  
+                            c + cc - hfnch) *
               filter.val(ii, jj, cc);
       }
       fu.val(i,j,c) = v;
@@ -191,7 +191,7 @@ std::pair<float, float> image_minmax(struct Img &u){
    for (int i=0;i<nx;i++) {
       float v = val(u,Point(i,j), c);
       if (std::isfinite(v)) {
-         if (v < gmin) gmin = v;   
+         if (v < gmin) gmin = v;
          if (v > gmax) gmax = v;
       }
    }
@@ -205,7 +205,7 @@ struct Img median_filter(struct Img &u, int radius) {
     int size=2*radius+1;
     size *= size;
     std::vector<float> v(size);
-    for(int k=0; k<M.nch; k++) 
+    for(int k=0; k<M.nch; k++)
     for(int y=0; y<M.ny; y++)
     for(int x=0; x<M.nx; x++)
     {
@@ -213,7 +213,7 @@ struct Img median_filter(struct Img &u, int radius) {
        for(int j=-radius; j<=radius; j++)
           if(0<=j+y && j+y<u.ny)
              for(int i=-radius; i<=radius; i++)
-                if(0<=i+x && i+x<u.nx && ! isnan(M.val(i+x,j+y,k)) )
+                if(0<=i+x && i+x<u.nx && ! std::isnan(M.val(i+x,j+y,k)) )
                    v[n++] = M.val(i+x,j+y,k);
        std::nth_element(v.begin(), v.begin()+n/2, v.end());
        M.val(x,y,k) = v[n/2];

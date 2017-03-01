@@ -150,7 +150,7 @@ inline float computeC_clippedNCC( Point p, Point q, const struct Img &u, const s
 		{
 			float v1 = valnan(u, p + Point(i, j), t);
 			float v2 = valnan(v, q + Point(i, j), t);
-         if (isnan(v1) || isnan(v2)) return INFINITY;
+         if (std::isnan(v1) || std::isnan(v2)) return INFINITY;
          mu1+=v1;    mu2+=v2;
          s1 +=v1*v1; s2 +=v2*v2; prod+=v1*v2;
          n++;
