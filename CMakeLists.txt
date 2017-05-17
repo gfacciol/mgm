@@ -41,9 +41,7 @@ endif ()
 #
 add_executable (mgm_multi main_mgm_multi.cc img.cc point.cc mgm_costvolume.cc mgm_core.cc shear.c census_tools.cc stereo_utils.cc stereo_utils.h mgm_multiscale.cc mgm_multiscale.h)
 target_link_libraries(mgm_multi ${LIBS})
-target_include_directories(mgm_multi  PRIVATE common)
 
 add_executable (mgm main_mgm.cc mgm_multiscale.cc img.cc point.cc mgm_costvolume.cc mgm_core.cc census_tools.cc shear.c stereo_utils.cc stereo_utils.h)
 target_link_libraries(mgm ${LIBS})
-target_include_directories(mgm PRIVATE common)
 
