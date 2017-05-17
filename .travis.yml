@@ -1,4 +1,4 @@
-language: c
+language: c++
 
 matrix:
   include:
@@ -6,6 +6,5 @@ matrix:
     - os: osx
 
 script:
-  - cmake
-  - make
-  - make test
+  - mkdir build && cd build && cmake .. && cmake --build && mgm_multi
+#  - make test
