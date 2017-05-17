@@ -6,5 +6,5 @@ matrix:
     - os: osx
 
 script:
-  - mkdir build && cd build && cmake .. && cmake --build && mgm_multi
+  - mkdir build && cd build && cmake .. && make && mgm_multi
 #  - make test
