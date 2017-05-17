@@ -13,5 +13,5 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install fftw; fi
 
 script:
-  - mkdir build && cd build && cmake .. && make && mgm_multi
+  - mkdir build && cd build && cmake .. && make 
 #  - make test
