@@ -37,7 +37,15 @@ int get_refinement_index(const char *name) {
 
 
 
-void subpixel_refinement_sgm(struct costvolume_t &S, std::vector<float > &out, std::vector<float > &outcost, char *refinement)
+/**
+ * refines the disparities(out) and the costs(outcost) by interpolating
+ * the location of the minimum in the costvolume S using several methods:
+ * none, vfit, parabola, cubic, parabolaOCV
+ * */
+void subpixel_refinement_sgm(struct costvolume_t &S,       // modifies out and outcost
+                             std::vector<float > &out,
+                             std::vector<float > &outcost,
+                             char *refinement)   //none, vfit, parabola, cubic, parabolaOCV
 {
    int N=out.size();
 

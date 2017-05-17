@@ -5,41 +5,21 @@
  *                     Enric Meinhardt <enric.meinhardt@cmla.ens-cachan.fr>*/
 #include "stdlib.h"
 #include "stdio.h"
-#include "string.h"
-#include "math.h"
-#include <numeric>
+#include "cmath"
 #include <algorithm>
 #include <vector>
-#include <cstring>
 #include "assert.h"
 
+using namespace std;
+
 //// structures to wrap images and points
-#include "img.h"
-#include "img_tools.h"
 #include "point.h"
 
-// from img_tools.h
-//inline int check_inside_image(const Point p, const struct Img &u) {
-//   int nx = u.nx;
-//   int ny = u.ny;
-//   float x = p.x;
-//   float y = p.y;
-//   if(x>=0 && y>=0 && x<nx && y<ny) return 1;
-//   else return 0;
-//}
 
 
 /********************** COSTVOLUME *****************************/
-#include "mgm_costvolume.h"
-
-//struct costvolume_t allocate_costvolume (struct Img min, struct Img max) {
-//   struct costvolume_t cv;
-//   cv.vectors = std::vector< Dvec >(min.npix);
-//   for (int i=0;i< min.npix;i++) 
-//      cv[i].init(min[i], max[i]);
-//   return cv;
-//}
-struct costvolume_t allocate_costvolume (struct Img min, struct Img max);
+#include "mgm_core.h"
+//struct costvolume_t allocate_costvolume (struct Img min, struct Img max);
 
 
 /********************** MGM *****************************/
@@ -409,8 +389,8 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
                         const struct Img &dminI, const struct Img &dmaxI, 
                         struct Img *out, struct Img *outcost, 
                         const float P1, const float P2, const int NDIR, const int MGM, 
-                        const int USE_FELZENSZWALB_POTENTIALS = 0, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
-                        int SGM_FIX_OVERCOUNT = 1)                 // fix the overcounting in SGM following (Drory etal. 2014)
+                        const int USE_FELZENSZWALB_POTENTIALS, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
+                        int SGM_FIX_OVERCOUNT)                 // fix the overcounting in SGM following (Drory etal. 2014)
 {
 
    int nx = dminI.nx;
@@ -554,7 +534,7 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
             float DeltaI4 = val(in_w, p, pass_to_channel_4[pass]);
             #undef val
             if(USE_FELZENSZWALB_POTENTIALS>0)
-               update_costW_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2, 
+               update_costW_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2,
                      DeltaI1, DeltaI2, DeltaI3, DeltaI4, MGM);
             else
                update_costW(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2,
@@ -633,8 +613,8 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
                         const struct Img &dminI, const struct Img &dmaxI, 
                         struct Img *out, struct Img *outcost, 
                         const float P1, const float P2, const int NDIR, const int MGM, 
-                        const int USE_FELZENSZWALB_POTENTIALS = 0, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
-                        int SGM_FIX_OVERCOUNT = 1)                 // fix the overcounting in SGM following (Drory etal. 2014)
+                        const int USE_FELZENSZWALB_POTENTIALS, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
+                        int SGM_FIX_OVERCOUNT)                 // fix the overcounting in SGM following (Drory etal. 2014)
 {
 
    int nx = dminI.nx;

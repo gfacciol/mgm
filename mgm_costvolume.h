@@ -5,12 +5,12 @@
 #define COSTVOLUME_H_
 
 #include "point.h"
-
-#include "img.h"
+#include <cstring>
+#include "img_interp.h"
 
 #include "img_tools.h"
 
-#include "census_tools.cc"
+//#include "census_tools.cc"
 
 #define __max(a,b)  (((a) > (b)) ? (a) : (b))
 #define __min(a,b)  (((a) < (b)) ? (a) : (b))
@@ -19,6 +19,17 @@
 typedef float (*cost_t)(Point,Point,const struct Img&,const struct Img&);
 
 
+inline float computeC_AD_sub( Point p, Point q, const struct Img &u, const struct Img &v) {
+	if( !check_inside_image(p,u) ) return INFINITY;
+	if( !check_inside_image(q,v) ) return INFINITY;
+	float tmp = 0;
+	for(int t=0;t<u.nch;t++) {
+      float x = u.getpixel(p.x,p.y,t) - v.getpixel(q.x,q.y,t);
+      x = __max(x,-x);
+      tmp += x ;
+   }
+	return tmp;
+}
 
 inline float computeC_AD( Point p, Point q, const struct Img &u, const struct Img &v) {
 	if( !check_inside_image(p,u) ) return INFINITY;
@@ -60,6 +71,7 @@ inline float computeC_SD( Point p, Point q, const struct Img &u, const struct Im
 // the environment variable with the same name
 SMART_PARAMETER(CENSUS_NCC_WIN,3)
 
+float compute_census_distance_array(uint8_t *a, uint8_t *b, int n);
 
 // fast census (input images must pre-processed by census transform)
 inline float computeC_census_on_preprocessed_images( Point p, Point q, const struct Img &u, const struct Img &v)
@@ -74,7 +86,10 @@ inline float computeC_census_on_preprocessed_images( Point p, Point q, const str
 	}
    // magic factor each channel contrinutes to r  4 bytes (32bits) 
    // to guarantee that the total cost is below 256 we take r*8 / nch
-	return r * 1.0 / u.nch; // magic factor
+//	return r * 1.0 / u.nch; // magic factor
+//	Normalize the costs to 5x5 windows
+   const float ratio = 5*5 / (CENSUS_NCC_WIN()*CENSUS_NCC_WIN());
+	return r * 1.0 * ratio / u.nch; // magic factor
 }
 
 
@@ -167,7 +182,7 @@ inline float computeC_clippedNCC( Point p, Point q, const struct Img &u, const s
 
 
 //// global table of all the cost functions
-struct distance_functions{
+static struct distance_functions{
    cost_t f;
    const char *name;
 } global_table_of_distance_functions[] = {
@@ -178,10 +193,11 @@ struct distance_functions{
          REGISTER_FUNCTIONN(computeC_clippedNCC,"ncc"),
          REGISTER_FUNCTIONN(computeC_BTAD,"btad"),
          REGISTER_FUNCTIONN(computeC_BTSD,"btsd"),
+         REGISTER_FUNCTIONN(computeC_AD_sub,"ad_sub"),
          #undef REGISTER_FUNCTIONN
          {NULL, ""},
 };
-int get_distance_index(const char *name) {
+inline int get_distance_index(const char *name) {
    int r=0; // default cost function is computeC_AD (first in table distance_functions)
    for(int i=0; global_table_of_distance_functions[i].f; i++)
       if (strcmp (name,global_table_of_distance_functions[i].name)==0) 
@@ -191,14 +207,14 @@ int get_distance_index(const char *name) {
 
 
 //// global table of the prefilter names
-const char* global_table_of_prefilters[] = {
+static const char* global_table_of_prefilters[] = {
                                              "none",
                                              "census", 
                                              "sobelx",
                                              "gblur",
                                               NULL,
                                            };
-int get_prefilter_index(const char *name) {
+inline int get_prefilter_index(const char *name) {
    int r=0;
    for(int i=0; global_table_of_prefilters[i]; i++)
       if (strcmp (name,global_table_of_prefilters[i])==0) 
@@ -207,104 +223,6 @@ int get_prefilter_index(const char *name) {
 }
 
 
-
-
-//////////////////////////////////////////////
-//////////////////////////////////////////////
-//////////////////////////////////////////////
-//////////////////////////////////////////////
-//////////////////////////////////////////////
-// costvolume_t contains a large vectors of Dvec (vectors)
-// This complex data structure is managed transparently thanks
-// to std::vectors wihtout caring aboyt copy or deallocation.
-// But allocation is quite expensive as all vectors are 
-// initialized upon creation. 
-// DVEC_ALLOCATION_HACK implements a more efficient memory 
-// management (using malloc and free) while exposing the 
-// same interface as costvolume_t. 
-// However the code is less elegant and maybe even buggy. 
-#ifdef DVEC_ALLOCATION_HACK
-
-#include "dvec2.cc"
-
-struct costvolume_t {
-   int npix;
-   int ndata;
-   struct Dvec *vectors;
-   float       *alldata;
-
-
-   inline Dvec  operator[](int i) const  { 
-      return this->vectors[i];
-   }
-   inline Dvec& operator[](int i)        { 
-      return this->vectors[i];
-   }
-
-   costvolume_t() {
-      int npix=0;
-      int ndata=0;
-      this->vectors = NULL;
-      this->alldata = NULL;
-   }
-
-   costvolume_t(const struct costvolume_t &src)
-   {
-      npix =src.npix;
-      ndata=src.ndata;
-      vectors = (struct Dvec*) malloc(sizeof(struct Dvec)*npix);
-      alldata = (float*)       calloc(ndata, sizeof(float));
-      float *baseptr = alldata;
-      memcpy(vectors, src.vectors, sizeof(struct Dvec)*npix);
-      memcpy(alldata, src.alldata, sizeof(float)*ndata);
-
-      int size = 0;
-      for (int i=0; i<npix; i++)  {
-         vectors[i].data = baseptr + size;
-         size += (int)((int) vectors[i].max - (int) vectors[i].min + 1);
-      }
-   }
-
-   ~costvolume_t(void)
-   {
-         if(this->vectors!=NULL) free(this->vectors);
-         if(this->alldata!=NULL) free(this->alldata);
-   }
-
-};
-
-struct costvolume_t allocate_costvolume (struct Img min, struct Img max) 
-{
-   int npix=min.nx*min.ny;
-   int size=0;
-   std::vector< int > pos(npix);
-   for (int i=0; i<npix; i++)  {
-      pos[i] = size;
-      size += (int)((int) max[i] - (int) min[i] + 1);
-   }
-
-   struct costvolume_t cv;
-   cv.npix =npix;
-   cv.ndata=size;
-   cv.vectors = (struct Dvec*) malloc(sizeof(struct Dvec)*npix);
-   cv.alldata = (float*)       calloc(size, sizeof(float));
-   float *baseptr = cv.alldata;
-
-#pragma omp parallel for
-   for (int i=0;i< npix;i++) {
-      cv.vectors[i].init(min[i], max[i], baseptr + pos[i]);
-   }
-
-   return cv;
-}
-
-
-
-//////////////////////////////////////////////
-//////////////////////////////////////////////
-#else // DVEC_ALLOCATION_HACK
-//////////////////////////////////////////////
-////////    USING VECTORS     ////////////////
 
 #include "dvec.cc"
 
@@ -315,24 +233,8 @@ struct costvolume_t {
 };
 
 
-struct costvolume_t allocate_costvolume (struct Img min, struct Img max) 
-{
-   struct costvolume_t cv;
-   cv.vectors = std::vector< Dvec >(min.npix);
-   for (int i=0;i< min.npix;i++) {
-      cv[i].init(min[i], max[i]);
-   }
+struct costvolume_t allocate_costvolume (struct Img min, struct Img max);
 
-   return cv;
-}
-
-
-#endif // DVEC_ALLOCATION_HACK
-//////////////////////////////////////////////
-//////////////////////////////////////////////
-//////////////////////////////////////////////
-//////////////////////////////////////////////
-//////////////////////////////////////////////
 
 struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // source (reference) image                      
                                                       struct Img &in_v, // destination (match) image                  
@@ -340,88 +242,7 @@ struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // sourc
                                                       struct Img &dmaxI,
                                                       char* prefilter,        // none, sobel, census(WxW)
                                                       char* distance,         // census, l1, l2, ncc(WxW), btl1, btl2
-                                                      float truncDist)        // truncated differences
-{
-   int nx = in_u.nx; 
-   int ny = in_u.ny;
-   int nch= in_u.nch;
-
-   struct Img u(in_u);
-   struct Img v(in_v);
-
-   // 0. pick the prefilter and cost functions
-   int distance_index  = get_distance_index(distance);
-   int prefilter_index = get_prefilter_index(prefilter);
-   cost_t cost = global_table_of_distance_functions[distance_index].f;
-
-   // 1. parameter consistency check
-   if (distance_index == get_distance_index("census") || prefilter_index == get_prefilter_index("census")) {
-       if (TSGM_DEBUG()) printf("costvolume: changing both distance and prefilter to CENSUS\n");
-       distance_index  = get_distance_index("census");
-       prefilter_index = get_prefilter_index("census");
-   }
-   if (TSGM_DEBUG()) printf("costvolume: selecting distance  %s\n", global_table_of_distance_functions[distance_index].name);
-   if (TSGM_DEBUG()) printf("costvolume: selecting prefilter %s\n", global_table_of_prefilters[prefilter_index]);
-   if (TSGM_DEBUG()) printf("costvolume: truncate distances at %f\n", truncDist);
-
-   // 2. apply prefilters if needed
-   if (prefilter_index == get_prefilter_index("census")) {
-      int winradius = CENSUS_NCC_WIN() / 2;
-      if (TSGM_DEBUG()) printf("costvolume: applying census with window of size %d\n", winradius*2+1);
-      u = census_transform(in_u, winradius);
-      v = census_transform(in_v, winradius);
-   }
-   if (prefilter_index == get_prefilter_index("sobelx")) {
-      if (TSGM_DEBUG()) printf("costvolume: applying sobel filter\n" );
-      float sobel_x[] = {-1,0,1, -2,0,2, -1,0,1};
-      u = apply_filter(in_u, sobel_x, 3, 3, 1);
-      v = apply_filter(in_v, sobel_x, 3, 3, 1);
-   }
-   if (prefilter_index == get_prefilter_index("gblur")) {
-      if (TSGM_DEBUG()) printf("costvolume: applying gblur(s=1) filter\n" );
-      u = gblur_truncated(in_u, 1.0);
-      v = gblur_truncated(in_v, 1.0);
-   }
-
-   // 3. allocate the cost volume 
-   struct costvolume_t CC = allocate_costvolume(dminI, dmaxI);
-
-   // 4. apply it 
-   #pragma omp parallel for
-   for(int jj=0; jj<ny; jj++) for(int ii=0; ii<nx; ii++)
-   {
-      int pidx = (ii + jj*nx);
-      int allinvalid = 1;
-
-      for(int o=CC[pidx].min;o<=CC[pidx].max;o++) 
-      {
-         Point p(ii,jj);      // current point on left image
-         Point q = p + Point(o,0); // other point on right image
-         // 4.1 compute the cost 
-         float e = truncDist * u.nch;
-         if (check_inside_image(q, v)) 
-            e = cost(p, q, u, v);
-         // 4.2 truncate the cost (if needed)
-         e = __min(e, truncDist * u.nch);
-         // 4.3 store it in the costvolume
-         CC[pidx].set_nolock(o, e); // pragma omp critic is inside set
-         if(std::isfinite(e)) allinvalid=0;
-      }
-      // SAFETY MEASURE: If there are no valid hypotheses for this pixel 
-      // (ie all hypotheses fall outside the target image or are invalid in some way)
-      // then the cost must be set to 0, for all the available hypotheses
-      // Leaving inf would be propagated and invalidate the entire solution 
-      if (allinvalid) {
-         for(int o=CC[pidx].min;o<=CC[pidx].max;o++) 
-         {
-            Point p(ii,jj);      // current point on left image
-            Point q = p + Point(o,0); // other point on right image
-            CC[pidx].set_nolock(o, 0); // pragma omp critic is inside set
-         }
-      }
-   }
-   return CC;
-}
-
+                                                      float truncDist,        // truncated differences
+                                                      float ZOOMFACTOR=1.0);   // subpixel factor (dmin & dmax are stretched)
 
 #endif //COSTVOLUME_H_
