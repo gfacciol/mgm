@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
    for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
 
 
-   struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
+   struct mgm_param param = {prefilter, refine, distance,truncDist,P1/float(SUBPIX()),P2/float(SUBPIX()),NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
 
    mgm_call(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, (void*)&param);
 

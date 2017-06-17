@@ -68,6 +68,18 @@ void subpixel_refinement_sgm(struct costvolume_t &S,       // modifies out and o
             float deltaX=0;
             refine(v, &minL, &deltaX);
             minP = o + deltaX;
+
+            // this fixes the asymmetry of the cubic interpolation 
+            // reverse the signal and compute the minimum
+            float vr[4] = {S[i][o+1], S[i][o], S[i][o-1], S[i][o-2]};
+            float deltaXr=0;
+            float minLr=out[i];
+            refine(vr, &minLr, &deltaXr);
+            if (minLr < minL) {
+               minP = o - deltaXr;
+               minL = minLr;
+            }
+
          }
    
          out[i] = minP;
