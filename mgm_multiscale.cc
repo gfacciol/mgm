@@ -204,6 +204,17 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
     struct Img u_w = compute_mgm_weights(u, aP2, aThresh); // missing aP1 !! TODO
     struct Img v_w = compute_mgm_weights(v, aP2, aThresh);
 
+    // adapt regularity parameters of USE_TRUNCATED_LINEAR_POTENTIALS==1 when SUBPIX>1
+    if (USE_TRUNCATED_LINEAR_POTENTIALS()==1 && ZOOMFACTOR>1) {
+       // this conversion for USE_TRUNCATED_LINEAR_POTENTIALS==1 is exact
+       P1/=ZOOMFACTOR;
+       P2=P2;
+    } else {
+       // the conversion for USE_TRUNCATED_LINEAR_POTENTIALS==0  is not exact 
+       P1/=ZOOMFACTOR;
+       P2=P2;
+    }
+
     for(int i = 0; i < TSGM_ITER(); i++)
     {
         //if(scale==0 && i>0) continue;
