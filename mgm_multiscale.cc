@@ -40,13 +40,13 @@ void upsample2x_disp(struct Img sdisp, struct Img &refim, struct Img *dmin, stru
 
    for(int i=0;i<sdisp.npix;i++) sdisp[i]*=2.0; // scale disparities
 
-   std::pair<float,float>gminmax = update_dmin_dmax_2(sdisp, &xdmin, &xdmax, *dmin, *dmax,
+   std::pair<float,float>gminmax = update_dmin_dmax(sdisp, &xdmin, &xdmax, *dmin, *dmax,
          MULTISCALE_MINMAX_UPSAMPLE_SLACK(),
          MULTISCALE_MINMAX_UPSAMPLE_RADIUS()); // only needed to compute dminmax
 
-   zoom_nn(xdmin, &dmin, 2, 2);
+   zoom_nn(xdmin, dmin, 2, 2);
 
-   zoom_nn(xdmax, &dmax, 2, 2);
+   zoom_nn(xdmax, dmax, 2, 2);
 
 //   remove_nonfinite_values_Img(*dmin, gminmax.first*2);
 //   remove_nonfinite_values_Img(*dmax, gminmax.second*2);
@@ -333,8 +333,8 @@ void recursive_multiscale(struct Img &u, struct Img &v,
       recursive_multiscale(su, sv, sdmin, sdmax, sdminR, sdmaxR,
                             sdl, scl, sdr, scl, numscales, scale+1, param);
 
-      upsample2x_disp(sdl, u, &dmin, &dmax);
-      upsample2x_disp(sdr, v, &dminR,&dmaxR);
+      upsample2x_disp(sdl, u, &sdmin, &sdmax);
+      upsample2x_disp(sdr, v, &sdminR,&sdmaxR);
 
 //{
 //       char name[200]; sprintf(name, "dmax_%02d%02d.tif", scale,0); // DEBUG
