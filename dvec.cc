@@ -107,6 +107,15 @@ struct Dvec
          minval=INFINITY;  // invalidate minval cache
       }
    }
+   inline void increment_atomic(int i, float value) {
+      if (i>=this->min && i<=this->max) {
+         int idx = i-this->min;
+         float &x = data[idx];
+//         #pragma omp atomic
+            x+=value;
+         minval=INFINITY;  // invalidate minval cache
+      }
+   }
 
    inline void set_nolock(int i, float value) {
       if (i>=this->min && i<=this->max) 

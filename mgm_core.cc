@@ -604,7 +604,7 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
 
 
 
-
+#ifdef USE_OLD_NAIVE_MGM
 
 // mgm returns the "aggregated" cost volume, out, and outcost without any other refinement
 // This is the naive parallel implementation of MGM, all traversals (up to 8) are computed 
@@ -812,3 +812,241 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
 
 
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+#else  // USE_OLD_NAIVE_MGM
+
+// mgm returns the "aggregated" cost volume, out, and outcost without any other refinement
+// This is the NEW naive parallel implementation of MGM, all traversals (up to 8) are computed 
+// in parallel. But the volumes Lr are stored in line buffers, so the memory overhead is minimal.
+struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct Img &in_w, 
+                        const struct Img &dminI, const struct Img &dmaxI, 
+                        struct Img *out, struct Img *outcost, 
+                        const float P1, const float P2, const int NDIR, const int MGM, 
+                        const int USE_FELZENSZWALB_POTENTIALS, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
+                        int SGM_FIX_OVERCOUNT)                 // fix the overcounting in SGM following (Drory etal. 2014)
+{
+
+   int nx = dminI.nx;
+   int ny = dminI.ny;
+
+   // check the content of in_w is it all 1?
+   int USE_IMAGE_DEPENDENT_WEIGHTS=0;
+   for (int i=0; i<in_w.ncol*in_w.nrow*in_w.nch; i++) 
+      if (in_w[i] != 1.0) USE_IMAGE_DEPENDENT_WEIGHTS = 1;
+   if (USE_IMAGE_DEPENDENT_WEIGHTS) printf(" USING IMAGE DEPENDENT WEIGHTS\n");
+
+   // run SGM              // ALLOCATED AND INITIALIZED TO 0 (THIS IS THE costvolume THAT IS RETURNED!)
+   struct costvolume_t S = allocate_costvolume(dminI, dmaxI);
+
+   std::vector<Pass_setup > direct;
+   //                         PASSES
+   //
+   // O: first pixel in the scan
+   // c: current pixel in the scan
+   // - or |: processed pixels (according to the scan order)
+   // 1,2,3,4: considered neighbours in the corresponding order 
+   //
+   //      (I)              (II)           (III)             (IV)
+   //
+   // O-----------                      O | | | |         | | | | | O 
+   // ------------           c--1--     | | | | 4         1 3 | | | | 
+   // ------------     ---4--2--3--     | | | | |         | | | | | | 
+   // ------------     ------------     | | | | 2 o       o 2 | | | | 
+   // -3--2--4----     ------------     | | | | | |         | | | | | 
+   // -1--c            ------------     | | | | 3 1         4 | | | | 
+   //                  -----------O     | | | | | |         | | | | | 
+   // 
+   //
+   //                         NEIGHBORS
+   //
+   //            (-1,-1)       (0,-1)        (1,-1) 
+   //                            |
+   //                            |
+   //            (-1,0)   ---    o    ---    (1,0)
+   //                            | 
+   //                            |
+   //            (-1,1)        (0,1)         (1,1) 
+   //
+   // with MGM == 1  only the neighbor #1 is considered
+   // with MGM == 2  #1 and #2 are considered
+   // with MGM == 4  #1 to #4 are considered
+   
+   
+   // horizontal and vertical
+   direct.push_back( Pass_setup(Point(-1,0)  , Point(0,-1)  , Point(-1,-1) , Point(1,-1)  ,1,1,1) ); // (I)
+   direct.push_back( Pass_setup(Point(1,0)   , Point(0,1)   , Point(1,1)   , Point(-1,1)  ,0,0,1) ); // (II)
+   direct.push_back( Pass_setup(Point(0,1)   , Point(-1,0)  , Point(-1,1)  , Point(-1,-1) ,1,0,0) ); // (III)
+   direct.push_back( Pass_setup(Point(0,-1)  , Point(1,0)   , Point(1,-1)  , Point(1,1)   ,0,1,0) ); // (IV)
+   // diagonals 45º                                          
+   direct.push_back( Pass_setup(Point(-1,-1) , Point(1,-1)  , Point(0,-1)  , Point(1,0)   ,0,1,1) );
+   direct.push_back( Pass_setup(Point(1,-1)  , Point(1,1)   , Point(1,0)   , Point(0,1)   ,0,0,0) );
+   direct.push_back( Pass_setup(Point(1,1)   , Point(-1,1)  , Point(0,1)   , Point(-1,0)  ,1,0,1) );
+   direct.push_back( Pass_setup(Point(-1,1)  , Point(-1,-1) , Point(-1,0)  , Point(0,-1)  ,1,1,0) );
+   // 22.5º
+   // ...  
+
+   // translate pass directions to edges encoded in channels of the image w
+   // THIS IS TIED TO THE INFORMATION IN THE VECTOR direct
+   // THE SAME VECTORS COULD BE OBTAINED PROGRAMATICALLY FROM direct 
+   //   str::vector < std::pair<Point, int> > dir_to_idx;
+   //   for(int i=0;i<7;i++)
+   //      dir_to_idx.push_back( std::pair<Point, int> (direct[i].dir1 ,i ));
+   int pass_to_channel_1[] = {0,1,2,3,4,5,6,7};
+   int pass_to_channel_2[] = {3,2,0,1,5,6,7,4};
+   int pass_to_channel_3[] = {4,6,7,5,3,1,2,0};
+   int pass_to_channel_4[] = {5,7,4,6,1,2,0,3};
+
+   #pragma omp parallel for
+   for(int pass=0;pass<NDIR;pass++)
+   {
+      printf("%d", pass); fflush(stdout);
+      Pass_setup dir = direct[pass];
+
+      // local Lr is implemented with a couple of line buffers
+      struct costvolume_buffer_t Lr(CC, 2 * max(nx,ny));
+
+      int maxii = nx, maxjj = ny;
+      if( !dir.row_major ) { maxii = ny; maxjj = nx; }
+      
+
+      // scan in the horizontal direction left to right
+      for(int jj=0; jj<maxjj; jj++) {
+
+
+      // PROCESS LINE Lr
+      for(int ii=0; ii<maxii; ii++)
+      {
+         int x=ii, y=jj;
+
+         int maxnx = maxii, maxny = maxjj;
+         // swap the indices if we are in column major 
+         #define SWAPi(a,b) {int swap=a;a=b;b=swap;}
+         if (!dir.row_major) {
+            SWAPi(x, y);
+            SWAPi(maxnx, maxny);
+         }
+
+         // reverse the direction
+         if(dir.inc_x==0) x = (maxnx-1)-x;
+         if(dir.inc_y==0) y = (maxny-1)-y;
+
+         Point p(x,y);				   // current point
+         Point pr  = p + dir.dir1;  // dir1 neighbor
+         Point pr2 = p + dir.dir2;  // dir2 neighbor
+         Point pr3 = p + dir.dir3;  // dir3 neighbor
+         Point pr4 = p + dir.dir4;  // dir4 neighbor
+
+
+         // PRELOAD ELEMENT in the Lr BUFFER
+         int pidx   = x + y *nx;
+         Lr.set(pidx, CC[pidx]);
+
+
+         // process line only if all neighbors are inside
+         if (check_inside_image(pr ,dminI)  &&
+             check_inside_image(pr2,dminI)  &&
+             check_inside_image(pr3,dminI)  &&
+             check_inside_image(pr4,dminI) ) 
+         {
+
+         // base index of the neighbor
+         int pidx   = (p.x+p.y*nx);
+         int pridx  = (pr.x+pr.y*nx);
+         int pr2idx = (pr2.x+pr2.y*nx);
+         int pr3idx = (pr3.x+pr3.y*nx);
+         int pr4idx = (pr4.x+pr4.y*nx);
+
+         Dvec & Lr_pidx   = Lr.get(pidx), 
+              & Lr_pridx  = Lr.get(pridx), 
+              & Lr_pr2idx = Lr.get(pr2idx), 
+              & Lr_pr3idx = Lr.get(pr3idx),
+              & Lr_pr4idx = Lr.get(pr4idx);
+
+         int TSGM_2LMIN = 0;
+         if(TSGM_2LMIN>0) { // THIS IS A LEGACY FEATURE (DISABLED)
+            //   update_cost2L2(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, P1, P2);
+            update_cost2Lmin(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, P1, P2);
+         } 
+         else if(USE_IMAGE_DEPENDENT_WEIGHTS) {      // IMAGE DEPENDENT WEIGHTS
+
+            #define val(u, p, ch)  u.data[(p.x) + (u.nx)*(p.y) + (ch)*(u.npix)]
+            float DeltaI1 = val(in_w, p, pass_to_channel_1[pass]);
+            float DeltaI2 = val(in_w, p, pass_to_channel_2[pass]);
+            float DeltaI3 = val(in_w, p, pass_to_channel_3[pass]);
+            float DeltaI4 = val(in_w, p, pass_to_channel_4[pass]);
+            #undef val
+            if(USE_FELZENSZWALB_POTENTIALS>0) 
+               update_costW_trunclinear(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2, 
+                     DeltaI1, DeltaI2, DeltaI3, DeltaI4, MGM);
+            else
+               update_costW(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2,
+                  DeltaI1, DeltaI2, DeltaI3, DeltaI4, MGM);
+         }
+         else {                                 // WITHOUT IMAGE DEPENDENT WEIGHTS
+            if(USE_FELZENSZWALB_POTENTIALS>0) {
+               if(MGM==2)
+                  update_cost2_trunclinear(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, P1, P2);
+               else 
+                  update_costW_trunclinear(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2, 
+                        1.0, 1.0, 1.0, 1.0, MGM);
+            }
+            else if(MGM==2) 
+               update_cost2(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, P1, P2);
+            else
+               update_costW(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2, 
+                     1.0, 1.0, 1.0, 1.0, MGM);
+         }
+         } // end  if
+         
+
+         // ACCUMULATE LINE Lr in S and update minvalue in the Dvec
+         Dvec & Lr_pidx   = Lr.get(pidx);
+         Lr_pidx.get_minvalue();    // precompute min value in the current list
+
+         for(int o=Lr_pidx.min;o<=Lr_pidx.max;o++) {
+            S[pidx].increment_atomic(o, Lr_pidx[o]); // pragma omp atomic is inside increment
+         }
+
+
+      }
+
+
+   }
+
+
+   }
+
+
+   // WTA 
+   #pragma omp parallel for
+   for(int i=0;i<nx*ny;i++) {
+      float minP;
+      float minL=INFINITY;
+      for(int o=S[i].min;o<=S[i].max;o++) {
+         // overcounting correction (Drory etal. 2014) 
+         if (SGM_FIX_OVERCOUNT==1)
+            S[i].set_nolock(o, S[i][o] - (NDIR -1) * CC[i][o]);
+
+         if(std::isfinite(S[i][o]))
+         if(minL > S[i][o]) {
+            minL = S[i][o];
+            minP = o;
+         }
+      }	  
+      (*out)[i] = minP;
+      (*outcost)[i] = minL;
+   }
+
+   // return the aggregated costvolume
+   return S;
+}
+
+#endif // USE_OLD_NAIVE_MGM

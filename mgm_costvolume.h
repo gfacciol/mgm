@@ -226,10 +226,40 @@ inline int get_prefilter_index(const char *name) {
 
 #include "dvec.cc"
 
+
 struct costvolume_t {
    std::vector< Dvec > vectors;
    inline Dvec  operator[](int i) const  { return this->vectors[i];}
    inline Dvec& operator[](int i)        { return this->vectors[i];}
+};
+
+
+// this buffer has the spape of a cost volume
+// but can only hold the last maxsize Dvec elements
+// inserted with the method set
+struct costvolume_buffer_t {
+   private:
+   std::vector<int> index; // buffer lookup index
+   std::vector< Dvec > q;  // circular queue of elements
+   int lastq;              // head of the queue, we don't care about the tail
+
+   public:
+   int maxsize;            // size of the queue
+
+   costvolume_buffer_t(struct costvolume_t &cv, int m) {
+      index   = std::vector<int> (cv.vectors.size()) ;
+      q       = std::vector< Dvec > (m);
+      lastq   = m-1;
+      maxsize = m;
+   }
+   inline Dvec& get (int i) {
+      return q[index[i]];
+   }
+   inline void set(int i, Dvec& x) {
+      lastq = (lastq+1)%maxsize;
+      index[i] = lastq;
+      q[lastq] = x;
+   }
 };
 
 
