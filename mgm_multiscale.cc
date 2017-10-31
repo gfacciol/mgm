@@ -33,23 +33,23 @@ void zoom_nn(struct Img &in, struct Img *out, int fx, int fy) {
 SMART_PARAMETER(MULTISCALE_MINMAX_UPSAMPLE_RADIUS,4);
 SMART_PARAMETER(MULTISCALE_MINMAX_UPSAMPLE_SLACK,8); // old value: 3 (it was too small)
 
-void upsample2x_disp(struct Img &sdisp, struct Img &refim, struct Img *dmin, struct Img *dmax) {
-   struct Img disp(refim.nx,refim.ny);
+void upsample2x_disp(struct Img sdisp, struct Img &refim, struct Img *dmin, struct Img *dmax) {
+
    struct Img xdmin(sdisp.nx,sdisp.ny);
    struct Img xdmax(sdisp.nx,sdisp.ny);
 
-   std::pair<float,float>gminmax = update_dmin_dmax(sdisp, &xdmin, &xdmax,
+   for(int i=0;i<sdisp.npix;i++) sdisp[i]*=2.0; // scale disparities
+
+   std::pair<float,float>gminmax = update_dmin_dmax_2(sdisp, &xdmin, &xdmax, *dmin, *dmax,
          MULTISCALE_MINMAX_UPSAMPLE_SLACK(),
          MULTISCALE_MINMAX_UPSAMPLE_RADIUS()); // only needed to compute dminmax
 
-   zoom_nn(xdmin, dmin, 2, 2);
-   for(int i=0;i<dmin->npix;i++) (*dmin)[i] = (*dmin)[i] * 2.0;
+   zoom_nn(xdmin, &dmin, 2, 2);
 
-   zoom_nn(xdmax, dmax, 2, 2);
-   for(int i=0;i<dmax->npix;i++) (*dmax)[i] = (*dmax)[i] * 2.0;
+   zoom_nn(xdmax, &dmax, 2, 2);
 
-   remove_nonfinite_values_Img(*dmin, gminmax.first*2);
-   remove_nonfinite_values_Img(*dmax, gminmax.second*2);
+//   remove_nonfinite_values_Img(*dmin, gminmax.first*2);
+//   remove_nonfinite_values_Img(*dmax, gminmax.second*2);
 }
 
 
@@ -318,7 +318,7 @@ void recursive_multiscale(struct Img &u, struct Img &v,
    }
 
 
-   if(fmin(u.nx,u.ny) > 100 && scale < numscales ) {
+   if(fmax(u.nx,u.ny) > 100 && fmin(u.nx,u.ny) > 50 && scale < numscales ) {
       struct Img su = downsample2x(u,0.8);
       struct Img sv = downsample2x(v,0.8);
       struct Img sdmin  = downsample2x_disp(dmin, false); // fixme!
@@ -336,24 +336,40 @@ void recursive_multiscale(struct Img &u, struct Img &v,
       upsample2x_disp(sdl, u, &dmin, &dmax);
       upsample2x_disp(sdr, v, &dminR,&dmaxR);
 
-      remove_nonfinite_values_Img(dmin, mindisp);
-      remove_nonfinite_values_Img(dmax, maxdisp);
-
-      remove_nonfinite_values_Img(dminR, mindispR);
-      remove_nonfinite_values_Img(dmaxR, maxdispR);
-
-//       char name[200]; sprintf(name, "/tmp/%02d%02d.tif", scale,0); // DEBUG
+//{
+//       char name[200]; sprintf(name, "dmax_%02d%02d.tif", scale,0); // DEBUG
 ////	      iio_write_vector_split(name, dl); // DEBUG
 //         // dump disp range
 //       struct Img rr = Img(dmax);
-//       for(int i=0;i<rr.npix;i++) rr[i] -= dmin[i];
+//      // for(int i=0;i<rr.npix;i++) rr[i] -= dmin[i];
 //	      iio_write_vector_split(name, rr); // DEBUG
+//}
+
+//{
+//       char name[200]; sprintf(name, "dmin_%02d%02d.tif", scale,0); // DEBUG
+////	      iio_write_vector_split(name, dl); // DEBUG
+//         // dump disp range
+//       struct Img rr = Img(dmin);
+//       //for(int i=0;i<rr.npix;i++) rr[i] -= dmin[i];
+//	      iio_write_vector_split(name, rr); // DEBUG
+//}
+
+
+
+
    }
 
     printf("\n%d/%d %dx%d\n", scale, numscales,u.nx,u.ny);
+
+    printf("\n%f %f\n", dmin[0], dmax[0]);
     mgm_call(u, v,
              dmin, dmax, dminR, dmaxR,
              dl, cl, dr, cr, param);
+
+//{
+//       char name[200]; sprintf(name, "d_%02d%02d.tif", scale,0); // DEBUG
+//	      iio_write_vector_split(name, dl); // DEBUG
+//}
 
 }
 

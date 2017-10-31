@@ -127,13 +127,17 @@ void mindiff(struct Img &disp, struct Img &corr, int w, float tau=1.0)
 #define SKIP_MAIN
 #include "remove_small_cc.c"
 
-std::pair<float, float> update_dmin_dmax(struct Img outoff, struct Img *dminI, struct Img *dmaxI, int slack=3, int radius=2) {
+
+
+// use the current disparity outoff to update the disparity ranges:  dminI, dmaxI  
+// the invalid pixels of outoff are assigned the previous disparity range dminP dmaxP
+std::pair<float, float> update_dmin_dmax(struct Img outoff, struct Img *dminI, struct Img *dmaxI, struct Img & dminP, struct Img & dmaxP, int slack=3, int radius=2) {
     struct Img dminI2(*dminI);
     struct Img dmaxI2(*dmaxI);
     int nx = outoff.nx;
     int ny = outoff.ny;
 
-    // global (finite) min and max
+    // global (finite) min and max (legacy value for vminP, and vmaxP)
     std::pair<float,float>gminmax = image_minmax(outoff);
     float gmin = gminmax.first; float gmax = gminmax.second;
 
@@ -148,12 +152,14 @@ std::pair<float, float> update_dmin_dmax(struct Img outoff, struct Img *dminI, s
                 for (int di=-r;di<=r;di++)
                 {
                     float v = valneumann(outoff, i+di, j+dj);
+                    float vminP = valneumann(dminP, i+di, j+dj);
+                    float vmaxP = valneumann(dmaxP, i+di, j+dj);
                     if (std::isfinite(v)) {
                         dmin = fmin( dmin, v - slack );
                         dmax = fmax( dmax, v + slack );
                     } else {
-                        dmin = fmin( dmin, gmin - slack );
-                        dmax = fmax( dmax, gmax + slack );
+                        dmin = fmin( dmin, vminP );
+                        dmax = fmax( dmax, vmaxP );
                     }
                 }
             if (std::isfinite(dmin)) {
@@ -166,6 +172,7 @@ std::pair<float, float> update_dmin_dmax(struct Img outoff, struct Img *dminI, s
     *dmaxI = dmaxI2;
     return std::pair<float, float> (gmin, gmax);
 }
+
 
 // generate the backprojected image u according to the flow
 // the image v is used when the flow is invalid at a given point
