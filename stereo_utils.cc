@@ -129,16 +129,16 @@ void mindiff(struct Img &disp, struct Img &corr, int w, float tau=1.0)
 
 
 
-// use the current disparity outoff to update the disparity ranges:  dminI, dmaxI  
-// the invalid pixels of outoff are assigned the previous disparity range dminP dmaxP
-std::pair<float, float> update_dmin_dmax(struct Img outoff, struct Img *dminI, struct Img *dmaxI, struct Img & dminP, struct Img & dmaxP, int slack=3, int radius=2) {
-    struct Img dminI2(*dminI);
-    struct Img dmaxI2(*dmaxI);
-    int nx = outoff.nx;
-    int ny = outoff.ny;
+// use the current disparity (disp) to update the disparity ranges:  dminI, dmaxI  
+// the invalid pixels of disp are assigned the previous disparity range dminP dmaxP
+std::pair<float, float> update_dmin_dmax(struct Img disp, struct Img *dminI, struct Img *dmaxI, struct Img &dminP, struct Img &dmaxP, int slack=3, int radius=2) {
+    struct Img tdminI(*dminI);
+    struct Img tdmaxI(*dmaxI);
+    int nx = disp.nx;
+    int ny = disp.ny;
 
     // global (finite) min and max (legacy value for vminP, and vmaxP)
-    std::pair<float,float>gminmax = image_minmax(outoff);
+    std::pair<float,float>gminmax = image_minmax(disp);
     float gmin = gminmax.first; float gmax = gminmax.second;
 
     if (slack<0) slack = -slack;
@@ -151,7 +151,7 @@ std::pair<float, float> update_dmin_dmax(struct Img outoff, struct Img *dminI, s
             for (int dj=-r;dj<=r;dj++)
                 for (int di=-r;di<=r;di++)
                 {
-                    float v = valneumann(outoff, i+di, j+dj);
+                    float v = valneumann(disp, i+di, j+dj);
                     float vminP = valneumann(dminP, i+di, j+dj);
                     float vmaxP = valneumann(dmaxP, i+di, j+dj);
                     if (std::isfinite(v)) {
@@ -163,13 +163,14 @@ std::pair<float, float> update_dmin_dmax(struct Img outoff, struct Img *dminI, s
                     }
                 }
             if (std::isfinite(dmin)) {
-                dminI2[i+j*nx] = dmin; dmaxI2[i+j*nx] = dmax;
+                tdminI[i+j*nx] = dmin; 
+                tdmaxI[i+j*nx] = dmax;
             }
 
         }
 
-    *dminI = dminI2;
-    *dmaxI = dmaxI2;
+    *dminI = tdminI;
+    *dmaxI = tdmaxI;
     return std::pair<float, float> (gmin, gmax);
 }
 

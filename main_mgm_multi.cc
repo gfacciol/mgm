@@ -149,8 +149,8 @@ int main(int argc, char* argv[])
     // handle subpixel refinement 
     if(SUBPIX()>1) {
        // disparity range is estimated from min,max on a 9x9 window and enlarged by +-2 
-       update_dmin_dmax(outoff,  &dminI,  &dmaxI , dminI,  dmaxI, 2, 4); 
-       update_dmin_dmax(outoffR, &dminRI, &dmaxRI, dminRI, dmaxRI, 2, 4); 
+       update_dmin_dmax(outoff,  &dminI,  &dmaxI , dminI,  dmaxI,  2, 4);
+       update_dmin_dmax(outoffR, &dminRI, &dmaxRI, dminRI, dmaxRI, 2, 4);
        struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
        recursive_multiscale(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, 0, 0, (void*)&param);
     }
