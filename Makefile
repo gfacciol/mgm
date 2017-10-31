@@ -2,32 +2,32 @@ CFLAGS   ?= -O3 -DNDEBUG -ffast-math -march=native
 CXXFLAGS := $(CFLAGS)
 
 CPPFLAGS := -Iiio
-LDLIBS   := -lpng -ltiff -ljpeg -lm
+LDLIBS   := -lfftw3 -lpng -ltiff -ljpeg -lm
 
-# The following conditional statement appends "-std=gnu99" to CFLAGS when the
-# compiler does not define __STDC_VERSION__.  The idea is that many older
-# compilers are able to compile standard C when given that option.
-# This hack seems to work for all versions of gcc, clang and icc.
-CVERSION := $(shell $(CC) -dM -E - < /dev/null | grep __STDC_VERSION__)
-ifeq ($(CVERSION),)
-CFLAGS := $(CFLAGS) -std=gnu99
-endif
+
+BIN       = mgm_multi  mgm
+OBJ       = mgm_core.o  mgm_costvolume.o  mgm_multiscale.o  census_tools.o \
+            stereo_utils.o  point.o  shear.o  img.o  iio.o
+
+all       : $(BIN)
+iio.o     : iio/iio.c       ; $(CC) $(CFLAGS) $(CPPFLAGS) -c $^ -o $@
+%         : main_%.o $(OBJ) ; $(CXX) $(LDFLAGS) $^ -o $@ $(LDLIBS)
+clean     :                 ; $(RM) $(BIN) $(OBJ)
 
 # use OpenMP only if not clang
 ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"), 0)
 CFLAGS := $(CFLAGS) -fopenmp
+LDLIBS:= $(LDLIBS) -fopenmp
+CXXFLAGS := $(CXXFLAGS) -fopenmp
 endif
 
-
-PROGRAMS=mgm
-
-all: $(PROGRAMS)
-
-mgm : mgm.cc img.cc point.cc iio/iio.o
-
-clean:
-	$(RM) $(PROGRAMS) iio/iio.o
+# hack to add -std=gnu99 to very old compilers
+CVERSION := $(shell $(CC) -dM -E - < /dev/null | grep __STDC_VERSION__)
+ifeq ($(CVERSION),)
+CFLAGS   := $(CFLAGS) -std=gnu99
+endif
 
 test: all
 	MEDIAN=1 CENSUS_NCC_WIN=3 USE_TRUNCATED_LINEAR_POTENTIALS=1  TSGM=3 ./mgm -P2 20000 -P1 2 -r -120 -R 30 -t census -s vfit -O 8 data/fountain23-im?.png /tmp/{disp,cost}.tif
 	MEDIAN=1 USE_TRUNCATED_LINEAR_POTENTIALS=1  TSGM=3 ./mgm -P2 20000 -P1 4 -r -120 -R 30 -p sobel_x -truncDist 63 -s vfit -O 8 data/fountain23-im?.png /tmp/{disp,cost}.tif
+
