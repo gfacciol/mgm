@@ -341,9 +341,8 @@ void recursive_multiscale(struct Img &u, struct Img &v,
 //	      iio_write_vector_split(name, dmin); // DEBUG
 //}
 
-    printf("\n%d/%d %dx%d\n", scale, numscales,u.nx,u.ny);
-
-    printf("\n%f %f\n", dmin[0], dmax[0]);
+    printf("\n%d/%d %dx%d\t", scale, numscales,u.nx,u.ny);
+    printf("maxrange: %f %f\n", image_minmax(dmin).first, image_minmax(dmax).second);
     mgm_call(u, v,
              dmin, dmax, dminR, dmaxR,
              dl, cl, dr, cr, param);
