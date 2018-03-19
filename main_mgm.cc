@@ -91,6 +91,8 @@ int main(int argc, char* argv[])
 		fprintf (stderr, "        [-aP1         (1)]: multiplier factors of P1 and P2 when\n");
 		fprintf (stderr, "        [-aP2         (1)]:    \\sum |I1 - I2|^2 < nch*aThresh^2\n");
 		fprintf (stderr, "        [-aThresh     (5)]: Threshold for the multiplier factor (default 5)\n");
+		fprintf (stderr, "        [-Rd  fname]: right disparity map\n");
+		fprintf (stderr, "        [-Rc  fname]: right cost map\n");
 		fprintf (stderr, "        ENV: CENSUS_NCC_WIN=3   : size of the window for census and NCC\n");
 		fprintf (stderr, "        ENV: TESTLRRL=1   : lrrl\n");
 		fprintf (stderr, "        ENV: MEDIAN=0     : radius of the median filter postprocess\n");
@@ -125,6 +127,8 @@ int main(int argc, char* argv[])
    char* prefilter = pick_option(&argc, &argv, (char*) "p", (char*) "none"); //{none|census|sobelx}
    char* refine    = pick_option(&argc, &argv, (char*) "s", (char*) "none"); //{none|vfit|parabola|cubic}
    float truncDist = atof(pick_option(&argc, &argv, (char*) "truncDist",  (char*) "inf"));
+   char* f_outR    = pick_option(&argc, &argv, (char*) "Rd", (char*) "");   // right disparity and cost maps
+   char* f_costR   = pick_option(&argc, &argv, (char*) "Rc", (char*) "");   //
 
 	char* f_u     = (argc>i) ? argv[i] : NULL;      i++;
 	char* f_v     = (argc>i) ? argv[i] : NULL;      i++;
@@ -186,8 +190,10 @@ int main(int argc, char* argv[])
 	iio_write_vector_split(f_out, outoff);
     // generate the backprojected image
     struct Img syn = backproject_image(u, v, outoff);
-	if(f_cost) iio_write_vector_split(f_cost, outcost);
-	if(f_back) iio_write_vector_split(f_back, syn);
-	
-	return 0;
+    if(f_cost) iio_write_vector_split(f_cost, outcost);
+    if(f_back) iio_write_vector_split(f_back, syn);
+    if(strcmp (f_outR,"")!=0 )  iio_write_vector_split(f_outR, outoffR);
+    if(strcmp (f_costR,"")!=0 ) iio_write_vector_split(f_costR, outcostR);
+
+    return 0;
 }
