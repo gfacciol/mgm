@@ -27,6 +27,8 @@ struct mgm_param {
     float aP1, aP2;
     float aThresh;
     float ZOOMFACTOR;
+    struct Img *altweightu;
+    struct Img *altweightv;
 };
 
 void mgm_call(struct Img &u, struct Img &v,

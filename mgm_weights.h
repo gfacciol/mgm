@@ -23,7 +23,7 @@ inline float fastexp(float x) {
    return x;
 }
 
-inline float deltaImage(const struct Img &u, const Point p, const Point q)
+inline float delta2Image(const struct Img &u, const Point p, const Point q)
 {
    float d = 0;
    for (int c = 0; c < u.nch; c++){
@@ -76,9 +76,30 @@ struct Img compute_mgm_weights(struct Img &u, float aP, float aThresh)
          Point p(i,j);				   // current point
          Point pr  = p + scans[o];   // neighbor
          if (check_inside_image(pr ,u))  {
-            float Delta = deltaImage(u,p,pr);
-            wvalue = ws(Delta, aP, aThresh);
+            float Delta2 = delta2Image(u,p,pr);
+            wvalue = ws(Delta2, aP, aThresh);
          }
+         w[i + j*nx + o*nx*ny] = wvalue;
+      }
+   return w;
+}
+
+// For a pixel p each image of the stack correspond the weights to 
+// int neighbouring pixels: W, E, S, N, (NW, NE, SE, SW)
+struct Img compute_mgm_weights_copyvalue(struct Img u, float aP, float aThresh) 
+{
+   int nx = u.nx;
+   int ny = u.ny;
+
+   // load the edge weights (or initialize them to 1: TODO)
+   struct Img w(nx, ny, 8);
+   Point scans[] = {Point(-1,0), Point(1,0), Point(0,1), Point(0,-1), Point(-1,-1), Point(1,-1), Point(1,1), Point(-1,1)};
+
+   for (int o = 0; o < 8 ; o++) 
+   for (int j = 0; j < ny; j++)
+   for (int i = 0; i < nx; i++)
+      {
+         float wvalue = u[i + j*nx];
          w[i + j*nx + o*nx*ny] = wvalue;
       }
    return w;

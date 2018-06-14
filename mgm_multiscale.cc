@@ -183,6 +183,8 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
     float aP2       = param ? ((mgm_param*)param)->aP2       : 1;
     float aThresh   = param ? ((mgm_param*)param)->aThresh   : INFINITY;
     float ZOOMFACTOR= param ? ((mgm_param*)param)->ZOOMFACTOR: 1.0;
+    struct Img* altu= param ? ((mgm_param*)param)->altweightu: NULL;
+    struct Img* altv= param ? ((mgm_param*)param)->altweightv: NULL;
 
     //printf("%s %s %s %f, %f, %f, %d, %f, %f, %f, %f",
     //prefilter,
@@ -196,8 +198,15 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
     //ZOOMFACTOR);
 
     // compute weights
-    struct Img u_w = compute_mgm_weights(u, aP2, aThresh); // missing aP1 !! TODO
-    struct Img v_w = compute_mgm_weights(v, aP2, aThresh);
+    struct Img u_w;
+    struct Img v_w;
+    if (altu && altv) {
+      u_w = compute_mgm_weights_copyvalue(*altu, aP2, aThresh); // missing aP1 !! TODO
+      v_w = compute_mgm_weights_copyvalue(*altv, aP2, aThresh);
+    } else {
+      u_w = compute_mgm_weights(u, aP2, aThresh); // missing aP1 !! TODO
+      v_w = compute_mgm_weights(v, aP2, aThresh);
+    }
 
     // adapt regularity parameters of USE_TRUNCATED_LINEAR_POTENTIALS==1 when SUBPIX>1
     if (USE_TRUNCATED_LINEAR_POTENTIALS()==1 && ZOOMFACTOR>1) {

@@ -93,6 +93,8 @@ int main(int argc, char* argv[])
 		fprintf (stderr, "        [-aThresh     (5)]: Threshold for the multiplier factor (default 5)\n");
 		fprintf (stderr, "        [-Rd  fname]: right disparity map\n");
 		fprintf (stderr, "        [-Rc  fname]: right cost map\n");
+		fprintf (stderr, "        [-wl  fname]: regularization weights for the left disparity map\n");
+		fprintf (stderr, "        [-wr  fname]: regularization weights for the right disparity map\n");
 		fprintf (stderr, "        ENV: CENSUS_NCC_WIN=3   : size of the window for census and NCC\n");
 		fprintf (stderr, "        ENV: TESTLRRL=1   : lrrl\n");
 		fprintf (stderr, "        ENV: MEDIAN=0     : radius of the median filter postprocess\n");
@@ -130,6 +132,9 @@ int main(int argc, char* argv[])
    char* f_outR    = pick_option(&argc, &argv, (char*) "Rd", (char*) "");   // right disparity and cost maps
    char* f_costR   = pick_option(&argc, &argv, (char*) "Rc", (char*) "");   //
 
+   char* wl_name   = pick_option(&argc, &argv, (char*) "wl", (char*) "");   //weights left
+   char* wr_name   = pick_option(&argc, &argv, (char*) "wr", (char*) "");   //weights right
+
 	char* f_u     = (argc>i) ? argv[i] : NULL;      i++;
 	char* f_v     = (argc>i) ? argv[i] : NULL;      i++;
 	char* f_out   = (argc>i) ? argv[i] : NULL;      i++;
@@ -145,6 +150,17 @@ int main(int argc, char* argv[])
 
    remove_nonfinite_values_Img(u, 0);
    remove_nonfinite_values_Img(v, 0);
+
+
+   // weights for the regularization term
+	struct Img wl, wr, *altu=NULL, *altv=NULL;
+   if(strcmp (wl_name,"")!=0 && strcmp (wr_name,"")!=0) {
+      wl = iio_read_vector_split(wl_name);
+      wr = iio_read_vector_split(wr_name);
+      altu = &wl;
+      altv = &wr;
+   }
+
 
    struct Img dminI(u.nx, u.ny);
    struct Img dmaxI(u.nx, u.ny);
@@ -179,7 +195,7 @@ int main(int argc, char* argv[])
    for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
 
 
-   struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
+   struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX(), altu, altv};
 
    mgm_call(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, (void*)&param);
 
