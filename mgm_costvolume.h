@@ -275,4 +275,10 @@ struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // sourc
                                                       float truncDist,        // truncated differences
                                                       float ZOOMFACTOR=1.0);   // subpixel factor (dmin & dmax are stretched)
 
+
+// computes the second local minimum in the cost volume wrt the fist minimum srtored in dl
+// the value of the first minimum is stored in the first channel of cl this function writes its second channel
+void second_local_minimum_from_costvolume(struct costvolume_t &S, struct Img &dl, struct Img *cl);
+
+
 #endif //COSTVOLUME_H_

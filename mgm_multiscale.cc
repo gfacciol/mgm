@@ -232,6 +232,8 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
         //    remove_nonfinite_values_Img(dmin, gminmax.first);
         //    remove_nonfinite_values_Img(dmax, gminmax.second);
         }
+        // extract the second local minimum from S
+        second_local_minimum_from_costvolume(S, dl, &cl);
         // call subpixel refinement  (modifies out and outcost)
         subpixel_refinement_sgm(S, dl.data, cl.data, refine);
 
@@ -252,6 +254,8 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
         //    remove_nonfinite_values_Img(dminR, gminmax.first);
         //    remove_nonfinite_values_Img(dmaxR, gminmax.second);
         }
+        // extract the second local minimum from S
+        second_local_minimum_from_costvolume(S, dr, &cr);
         // call subpixel refinement  (modifies out and outcost)
         subpixel_refinement_sgm(S, dr.data, cr.data, refine);
 
@@ -321,8 +325,8 @@ void recursive_multiscale(struct Img &u, struct Img &v,
       struct Img sdminR = downsample2x_disp(dminR, false);
       struct Img sdmaxR = downsample2x_disp(dmaxR, true);
 
-      struct Img sdl(sdmin);  struct Img scl(sdmin);
-      struct Img sdr(sdminR); struct Img scr(sdminR);
+      struct Img sdl(sdmin);  struct Img scl(sdmin.nx, sdmin.ny,   2);
+      struct Img sdr(sdminR); struct Img scr(sdminR.nx, sdminR.ny, 2);
 
 
       recursive_multiscale(su, sv, sdmin, sdmax, sdminR, sdmaxR,

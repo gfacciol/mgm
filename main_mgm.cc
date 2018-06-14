@@ -137,8 +137,8 @@ int main(int argc, char* argv[])
 	char* f_back  = (argc>i) ? argv[i] : NULL;      i++;
 	
 	printf("%d %d\n", dmin, dmax);
-	
-	
+
+
 	// read input
 	struct Img u = iio_read_vector_split(f_u);
 	struct Img v = iio_read_vector_split(f_v);
@@ -169,11 +169,11 @@ int main(int argc, char* argv[])
 	
 	// call
 	struct Img outoff  = Img(u.nx, u.ny);
-	struct Img outcost = Img(u.nx, u.ny);
+	struct Img outcost = Img(u.nx, u.ny, 2);
 
    // variables for LR
 	struct Img outoffR  = Img(v.nx, v.ny);
-	struct Img outcostR = Img(v.nx, v.ny);
+	struct Img outcostR = Img(v.nx, v.ny, 2);
    struct Img dminRI(v.nx, v.ny);
    struct Img dmaxRI(v.nx, v.ny);
    for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}

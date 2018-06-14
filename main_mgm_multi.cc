@@ -137,11 +137,11 @@ int main(int argc, char* argv[])
 
     // output variables
     struct Img outoff  = Img(u.nx, u.ny);
-    struct Img outcost = Img(u.nx, u.ny);
+    struct Img outcost = Img(u.nx, u.ny, 2);
 
     // variables for LR
     struct Img outoffR  = Img(v.nx, v.ny);
-    struct Img outcostR = Img(v.nx, v.ny);
+    struct Img outcostR = Img(v.nx, v.ny, 2);
     struct Img dminRI(v.nx, v.ny);
     struct Img dmaxRI(v.nx, v.ny);
     for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}

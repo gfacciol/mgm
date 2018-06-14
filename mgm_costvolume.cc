@@ -173,3 +173,25 @@ struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // sourc
    return CC;
 }
 
+
+// computes the second local minimum in the cost volume wrt the fist minimum srtored in dl
+// the value of the first minimum is stored in the first channel of cl this function writes its second channel
+void second_local_minimum_from_costvolume(struct costvolume_t &S, struct Img &dl, struct Img *cl) {
+   if (cl->nch < 2) {
+      printf("second_local_minimum: nothing to do here. no second channel\n");
+      return;
+   }
+
+   for (int i = 0; i < cl->nx * cl->ny; i++) {
+      float currdisp  = round(dl[i]);
+      float firstmin  = S[i][currdisp];
+      float secondmin = INFINITY;
+      for(int o=S[i].min;o<=S[i].max;o++) {
+         if ( (std::abs(o-currdisp ) > 2)  &&  (secondmin > S[i][o])) {
+            secondmin = S[i][o];
+         }
+      }
+      (*cl)[i + cl->nx*cl->ny] = secondmin;
+   }
+
+}
