@@ -124,6 +124,7 @@ SMART_PARAMETER(USE_TRUNCATED_LINEAR_POTENTIALS,0);
 
 SMART_PARAMETER(REMOVESMALLCC,0.0)
 SMART_PARAMETER(MINDIFF,-1)
+SMART_PARAMETER(DUMP_COSTVOLUME,0);
 
 
 ////template<pre_function pre, call_function call, post_function post>
@@ -229,6 +230,12 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
         struct Img zdmin(dmin); for(int i = 0; i < zdmin.npix; i++) zdmin[i] *= ZOOMFACTOR;
         struct Img zdmax(dmax); for(int i = 0; i < zdmax.npix; i++) zdmax[i] *= ZOOMFACTOR;
         CC = allocate_and_fill_sgm_costvolume (u, v, zdmin, zdmax, prefilter, distance, truncDist, ZOOMFACTOR);
+        if (DUMP_COSTVOLUME()) {
+           int vdmin = image_minmax(zdmin).first;
+           int vdmax = image_minmax(zdmax).second;
+           printf("%d %d %d %d\n", u.nx, u.ny, vdmin, vdmax);
+           dump_costvolume(CC, u.nx, u.ny, vdmin, vdmax,  (char*) "costvolume_right.dat"); 
+        }
         //for(int i = 0; i < TSGM_ITER(); i++)
         {
             S = WITH_MGM2() ?
@@ -251,6 +258,12 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
         struct Img zdminR(dminR); for(int i = 0; i < zdminR.npix; i++) zdminR[i] *= ZOOMFACTOR;
         struct Img zdmaxR(dmaxR); for(int i = 0; i < zdmaxR.npix; i++) zdmaxR[i] *= ZOOMFACTOR;
         CC = allocate_and_fill_sgm_costvolume (v, u, zdminR, zdmaxR, prefilter, distance, truncDist, ZOOMFACTOR);
+        if (DUMP_COSTVOLUME()) {
+           int vdmin = image_minmax(zdminR).first;
+           int vdmax = image_minmax(zdmaxR).second;
+           printf("%d %d %d %d\n", v.nx, v.ny, vdmin, vdmax);
+           dump_costvolume(CC, v.nx, v.ny, vdmin, vdmax,  (char*) "costvolume_left.dat"); 
+        }
         //for(int i = 0; i < TSGM_ITER(); i++)
         {
             S = WITH_MGM2() ? 

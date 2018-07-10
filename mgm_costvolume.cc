@@ -195,3 +195,19 @@ void second_local_minimum_from_costvolume(struct costvolume_t &S, struct Img &dl
    }
 
 }
+
+// dumps the costvolume in a file with format:
+// nx(int x1), ny(int x1), ndisp(int x1), minimum_disp(int x1), costs(float x nx*ny*ndisp)
+void dump_costvolume(struct costvolume_t CC, int nx, int ny, int dmin, int dmax, char* cvfilename) {
+   FILE* fid = fopen(cvfilename, "wb");
+   int size[4] = {nx,ny,dmax-dmin+1,dmin};
+   fwrite(size, sizeof(int), 4, fid);
+
+   for(int i=0;i<nx*ny;i++) {
+      for(int o=dmin;o<=dmax;o++) {
+         float value = CC[i][o];
+         fwrite(&value, sizeof(float), 1, fid);
+      }
+   }
+   fclose(fid);
+}

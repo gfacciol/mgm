@@ -281,4 +281,8 @@ struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // sourc
 void second_local_minimum_from_costvolume(struct costvolume_t &S, struct Img &dl, struct Img *cl);
 
 
+// dumps the costvolume in a file with format:
+// nx(int x1), ny(int x1), ndisp(int x1), minimum_disp(int x1), costs(float x nx*ny*ndisp)
+void dump_costvolume(struct costvolume_t CC, int nx, int ny, int dmin, int dmax, char* cvfilename);
+
 #endif //COSTVOLUME_H_
