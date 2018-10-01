@@ -8,6 +8,7 @@
 /********************** MGM *****************************/
 
 #include "mgm_core.h"
+#include <map>
 
 /********************** MGM *****************************/
 
@@ -17,29 +18,16 @@
 //                          struct Img &dmin, struct Img &dmax, struct Img &dminR, struct Img &dmaxR,
 //                          struct Img &dl, struct Img &cl, struct Img &dr, struct Img &cr);
 
-struct mgm_param {
-    char* prefilter;
-    char* refine;
-    char* distance;
-    float truncDist;
-    float P1, P2;
-    int NDIR;
-    float aP1, aP2;
-    float aThresh;
-    float ZOOMFACTOR;
-    struct Img *altweightu;
-    struct Img *altweightv;
-};
 
 void mgm_call(struct Img &u, struct Img &v,
               struct Img &dmin, struct Img &dmax, struct Img &dminR, struct Img &dmaxR,
-              struct Img &dl, struct Img &cl, struct Img &dr, struct Img &cr, void *param=NULL);
+              struct Img &dl, struct Img &cl, struct Img &dr, struct Img &cr, struct mgm_param *param=NULL);
 
 
 
 void recursive_multiscale(struct Img &u, struct Img &v,
                           struct Img &dmin, struct Img &dmax, struct Img &dminR, struct Img &dmaxR,
                           struct Img &dl, struct Img &cl, struct Img &dr, struct Img &cr,
-                          int numscales, int scale, void *param=NULL);
+                          int numscales, int scale, struct mgm_param *param=NULL);
 
 #endif //PROJECT_MGM_MULTISCALE_H

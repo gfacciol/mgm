@@ -388,7 +388,7 @@ struct Pass_setup {
 struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w, 
                         const struct Img &dminI, const struct Img &dmaxI, 
                         struct Img *out, struct Img *outcost, 
-                        const float P1, const float P2, const int NDIR, const int MGM, 
+                        const float P1, const float P2, const int NDIR, const int MGM, struct mgm_param *param,
                         const int USE_FELZENSZWALB_POTENTIALS, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
                         int SGM_FIX_OVERCOUNT)                 // fix the overcounting in SGM following (Drory etal. 2014)
 {
@@ -612,7 +612,7 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
 struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct Img &in_w, 
                         const struct Img &dminI, const struct Img &dmaxI, 
                         struct Img *out, struct Img *outcost, 
-                        const float P1, const float P2, const int NDIR, const int MGM, 
+                        const float P1, const float P2, const int NDIR, const int MGM, struct mgm_param *param,
                         const int USE_FELZENSZWALB_POTENTIALS, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
                         int SGM_FIX_OVERCOUNT)                 // fix the overcounting in SGM following (Drory etal. 2014)
 {
@@ -829,7 +829,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
 struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct Img &in_w, 
                         const struct Img &dminI, const struct Img &dmaxI, 
                         struct Img *out, struct Img *outcost, 
-                        const float P1, const float P2, const int NDIR, const int MGM, 
+                        const float P1, const float P2, const int NDIR, const int MGM, struct mgm_param *param,
                         const int USE_FELZENSZWALB_POTENTIALS, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
                         int SGM_FIX_OVERCOUNT)                 // fix the overcounting in SGM following (Drory etal. 2014)
 {
@@ -903,6 +903,9 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
    int pass_to_channel_2[] = {3,2,0,1,5,6,7,4};
    int pass_to_channel_3[] = {4,6,7,5,3,1,2,0};
    int pass_to_channel_4[] = {5,7,4,6,1,2,0,3};
+
+   // disparity consensus confidence metric
+   std::vector<float > disparity_consensus(nx*ny*NDIR);
 
    #pragma omp parallel for
    for(int pass=0;pass<NDIR;pass++)
@@ -1012,6 +1015,8 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
          Lr_pidx.get_minvalue();    // precompute min value in the current list
 
          for(int o=Lr_pidx.min;o<=Lr_pidx.max;o++) {
+            if (Lr_pidx[o] == Lr_pidx.minval)
+               disparity_consensus[pidx*NDIR+pass] = o;
             S[pidx].increment_atomic(o, Lr_pidx[o]); // pragma omp atomic is inside increment
          }
 
@@ -1026,6 +1031,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
 
 
    // WTA 
+   Img tmp(nx,ny);
    #pragma omp parallel for
    for(int i=0;i<nx*ny;i++) {
       float minP;
@@ -1043,7 +1049,25 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
       }	  
       (*out)[i] = minP;
       (*outcost)[i] = minL;
+
+      // export confidence 
+      int confi = 0;
+      for (int p = 0; p < NDIR; p++) 
+         if (disparity_consensus[i*NDIR+p] == minP) confi++;
+      tmp[i] = confi;
    }
+
+   if (param->var_dict["right"] == 1) param->img_dict["confidence_consensusR"] = tmp;
+   else                               param->img_dict["confidence_consensusL"] = tmp;
+
+
+   {
+   Img tmp(nx,ny); 
+   for (int i=0; i<nx*ny; i++) tmp[i] = -(*outcost)[i]; 
+   if (param->var_dict["right"] == 1) param->img_dict["confidence_costR"] = tmp;
+   else                               param->img_dict["confidence_costL"] = tmp;
+   }
+
 
    // return the aggregated costvolume
    return S;

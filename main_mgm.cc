@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <vector>
 #include <cstring>
+#include <iostream>
 #include <cmath>
 #include "assert.h"
 
@@ -95,6 +96,9 @@ int main(int argc, char* argv[])
 		fprintf (stderr, "        [-Rc  fname]: right cost map\n");
 		fprintf (stderr, "        [-wl  fname]: regularization weights for the left disparity map\n");
 		fprintf (stderr, "        [-wr  fname]: regularization weights for the right disparity map\n");
+      fprintf (stderr, "        [-confidence_costL      fnameL -confidence_costR      fnameR]: left and right cost confidence maps\n");
+      fprintf (stderr, "        [-confidence_pkrL       fnameL -confidence_pkrR       fnameR]: left and right PKR confidence maps\n");
+      fprintf (stderr, "        [-confidence_consensusL fnameL -confidence_consensusR fnameR]: left and right consensus confidence maps\n");
 		fprintf (stderr, "        ENV: CENSUS_NCC_WIN=3   : size of the window for census and NCC\n");
 		fprintf (stderr, "        ENV: TESTLRRL=1   : lrrl\n");
 		fprintf (stderr, "        ENV: MEDIAN=0     : radius of the median filter postprocess\n");
@@ -129,11 +133,25 @@ int main(int argc, char* argv[])
    char* prefilter = pick_option(&argc, &argv, (char*) "p", (char*) "none"); //{none|census|sobelx}
    char* refine    = pick_option(&argc, &argv, (char*) "s", (char*) "none"); //{none|vfit|parabola|cubic}
    float truncDist = atof(pick_option(&argc, &argv, (char*) "truncDist",  (char*) "inf"));
-   char* f_outR    = pick_option(&argc, &argv, (char*) "Rd", (char*) "");   // right disparity and cost maps
-   char* f_costR   = pick_option(&argc, &argv, (char*) "Rc", (char*) "");   //
+//   char* f_outR    = pick_option(&argc, &argv, (char*) "Rd", (char*) "");   // right disparity and cost maps
+//   char* f_costR   = pick_option(&argc, &argv, (char*) "Rc", (char*) "");   //
 
    char* wl_name   = pick_option(&argc, &argv, (char*) "wl", (char*) "");   //weights left
    char* wr_name   = pick_option(&argc, &argv, (char*) "wr", (char*) "");   //weights right
+
+
+   // catch all the other optional output filenames
+   char * const keyword_parameters[] = {(char*) "confidence_consensusL", (char*) "confidence_consensusR", // path consensus confidence
+                                        (char*) "confidence_costL",      (char*) "confidence_costR",  // cost confidence
+                                        (char*) "confidence_pkrL",       (char*) "confidence_pkrR",  // cost confidence
+                                        (char*) "Rd",                    (char*) "Rc"}; // right disparity and cost maps
+   int num_keyword_parameters = 8;
+   std::vector< std::pair< std::string, std::string > >  other_keyword_parameters;
+   for(int i = 0; i<num_keyword_parameters; i++) {
+      char* fname = pick_option(&argc, &argv, keyword_parameters[i], (char*)"");
+      other_keyword_parameters.push_back( std::pair< std::string, std::string>( keyword_parameters[i], fname )  );
+   }
+
 
 	char* f_u     = (argc>i) ? argv[i] : NULL;      i++;
 	char* f_v     = (argc>i) ? argv[i] : NULL;      i++;
@@ -197,7 +215,7 @@ int main(int argc, char* argv[])
 
    struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX(), altu, altv};
 
-   mgm_call(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, (void*)&param);
+   mgm_call(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, &param);
 
 
 
@@ -208,8 +226,23 @@ int main(int argc, char* argv[])
     struct Img syn = backproject_image(u, v, outoff);
     if(f_cost) iio_write_vector_split(f_cost, outcost);
     if(f_back) iio_write_vector_split(f_back, syn);
-    if(strcmp (f_outR,"")!=0 )  iio_write_vector_split(f_outR, outoffR);
-    if(strcmp (f_costR,"")!=0 ) iio_write_vector_split(f_costR, outcostR);
+    //if(strcmp (f_outR,"")!=0 )  iio_write_vector_split(f_outR, outoffR);
+    //if(strcmp (f_costR,"")!=0 ) iio_write_vector_split(f_costR, outcostR);
+
+    param.img_dict["Rd"] = outoffR;
+    param.img_dict["Rc"] = outcostR;
+
+
+    for(int i = 0; i < num_keyword_parameters; i++) {
+       std::string keyword =  other_keyword_parameters[i].first;
+       std::string fname   =  other_keyword_parameters[i].second;
+       if ( fname != "" ) 
+          if (param.img_dict.count(keyword)>0) 
+             iio_write_vector_split( (char*) fname.c_str(), param.img_dict[keyword.c_str()]);
+          else 
+             printf("Ignoring keywork %s NOT FOUND in param.img_dict\n", keyword.c_str());
+    }
+
 
     return 0;
 }

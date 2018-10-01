@@ -176,6 +176,7 @@ struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // sourc
 
 // computes the second local minimum in the cost volume wrt the fist minimum srtored in dl
 // the value of the first minimum is stored in the first channel of cl this function writes its second channel
+// THIS IS A LEGACY FUNCTION TO BE REMOVED SOON
 void second_local_minimum_from_costvolume(struct costvolume_t &S, struct Img &dl, struct Img *cl) {
    if (cl->nch < 2) {
       printf("second_local_minimum: nothing to do here. no second channel\n");
@@ -195,6 +196,26 @@ void second_local_minimum_from_costvolume(struct costvolume_t &S, struct Img &dl
    }
 
 }
+
+
+// computes the PKR (peak ratio) confidence over the cost volume S, for the disparity given in dl
+// PKR is the ratio of the second and the first local minimum of the cost
+struct Img compute_PKR_confidence(struct costvolume_t &S, struct Img &dl) {
+   struct Img out(dl.nx, dl.ny);
+   for (int i = 0; i < dl.nx * dl.ny; i++) {
+      float currdisp  = round(dl[i]);
+      float firstmin  = S[i][currdisp];
+      float secondmin = INFINITY;
+      for(int o=S[i].min;o<=S[i].max;o++) {
+         if ( (std::abs(o-currdisp ) > 2)  &&  (secondmin > S[i][o])) {
+            secondmin = S[i][o];
+         }
+      }
+      out[i] = secondmin/(firstmin + 0.1);
+   }
+   return out;
+}
+
 
 // dumps the costvolume in a file with format:
 // nx(int x1), ny(int x1), ndisp(int x1), minimum_disp(int x1), costs(float x nx*ny*ndisp)

@@ -131,18 +131,7 @@ SMART_PARAMETER(DUMP_COSTVOLUME,0);
 ////void recursive_multiscale(struct Img &u, struct Img &v, int numscales,
 ////                          struct Img &dmin, struct Img &dmax, struct Img &dminR, struct Img &dmaxR,
 ////                          struct Img &dl, struct Img &cl, struct Img &dr, struct Img &cr);
-//
-//struct mgm_param {
-//    char* prefilter;
-//    char* refine;
-//    char* distance;
-//    float truncDist;
-//    float P1, P2;
-//    int NDIR;
-//    float aP1, aP2;
-//    float aThresh;
-//    float ZOOMFACTOR;
-//};
+
 
 
 ///********************** COSTVOLUME *****************************/
@@ -171,21 +160,21 @@ SMART_PARAMETER(DUMP_COSTVOLUME,0);
 
 void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
               struct Img &dmin, struct Img &dmax, struct Img &dminR, struct Img &dmaxR,
-              struct Img &dl, struct Img &cl, struct Img &dr, struct Img &cr, void *param)
+              struct Img &dl, struct Img &cl, struct Img &dr, struct Img &cr, struct mgm_param *param)
 {
-    char* prefilter = param ? ((mgm_param*)param)->prefilter : (char*)"none";
-    char* refine    = param ? ((mgm_param*)param)->refine    : (char*)"none";
-    char* distance  = param ? ((mgm_param*)param)->distance  : (char*)"ad";
-    float truncDist = param ? ((mgm_param*)param)->truncDist : INFINITY;
-    float P1        = param ? ((mgm_param*)param)->P1        : 8;
-    float P2        = param ? ((mgm_param*)param)->P2        : 32;
-    int   NDIR      = param ? ((mgm_param*)param)->NDIR      : 4;
-    float aP1       = param ? ((mgm_param*)param)->aP1       : 1;
-    float aP2       = param ? ((mgm_param*)param)->aP2       : 1;
-    float aThresh   = param ? ((mgm_param*)param)->aThresh   : INFINITY;
-    float ZOOMFACTOR= param ? ((mgm_param*)param)->ZOOMFACTOR: 1.0;
-    struct Img* altu= param ? ((mgm_param*)param)->altweightu: NULL;
-    struct Img* altv= param ? ((mgm_param*)param)->altweightv: NULL;
+    char* prefilter = param ? param->prefilter : (char*)"none";
+    char* refine    = param ? param->refine    : (char*)"none";
+    char* distance  = param ? param->distance  : (char*)"ad";
+    float truncDist = param ? param->truncDist : INFINITY;
+    float P1        = param ? param->P1        : 8;
+    float P2        = param ? param->P2        : 32;
+    int   NDIR      = param ? param->NDIR      : 4;
+    float aP1       = param ? param->aP1       : 1;
+    float aP2       = param ? param->aP2       : 1;
+    float aThresh   = param ? param->aThresh   : INFINITY;
+    float ZOOMFACTOR= param ? param->ZOOMFACTOR: 1.0;
+    struct Img* altu= param ? param->altweightu: NULL;
+    struct Img* altv= param ? param->altweightv: NULL;
 
     //printf("%s %s %s %f, %f, %f, %d, %f, %f, %f, %f",
     //prefilter,
@@ -236,20 +225,26 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
            printf("%d %d %d %d\n", u.nx, u.ny, vdmin, vdmax);
            dump_costvolume(CC, u.nx, u.ny, vdmin, vdmax,  (char*) "costvolume_right.dat"); 
         }
+
+        //////// left-right pass
+        param->var_dict["right"] = 0;
+
         //for(int i = 0; i < TSGM_ITER(); i++)
         {
             S = WITH_MGM2() ?
                mgm(CC, u_w, zdmin, zdmax, &dl, &cl, P1, P2,
-                    NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) :
+                    NDIR, TSGM(), param, USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) :
                mgm_naive_parallelism(CC, u_w, zdmin, zdmax, &dl, &cl, P1, P2,
-                    NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) ;
+                    NDIR, TSGM(), param, USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) ;
          print_solution_energy(u, dl.data, CC, P1, P2);
         //    std::pair<float,float>gminmax = update_dmin_dmax(dl, &dmin, &dmax, 3);
         //    remove_nonfinite_values_Img(dmin, gminmax.first);
         //    remove_nonfinite_values_Img(dmax, gminmax.second);
         }
         // extract the second local minimum from S
+        param->img_dict["confidence_pkrL"] = compute_PKR_confidence(S, dl);
         second_local_minimum_from_costvolume(S, dl, &cl);
+        
         // call subpixel refinement  (modifies out and outcost)
         subpixel_refinement_sgm(S, dl.data, cl.data, refine);
 
@@ -264,20 +259,26 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
            printf("%d %d %d %d\n", v.nx, v.ny, vdmin, vdmax);
            dump_costvolume(CC, v.nx, v.ny, vdmin, vdmax,  (char*) "costvolume_left.dat"); 
         }
+
+        //////// right-left pass
+        param->var_dict["right"] = 1;
+
         //for(int i = 0; i < TSGM_ITER(); i++)
         {
             S = WITH_MGM2() ? 
                mgm(CC, v_w, zdminR, zdmaxR, &dr, &cr, P1, P2,
-                    NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) :
+                    NDIR, TSGM(), param, USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) :
                mgm_naive_parallelism(CC, v_w, zdminR, zdmaxR, &dr, &cr, P1, P2,
-                    NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) ;
+                    NDIR, TSGM(), param, USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) ;
          print_solution_energy(v, dr.data, CC, P1, P2);
         //    std::pair<float,float>gminmax = update_dmin_dmax(dr, &dminR, &dmaxR,3);
         //    remove_nonfinite_values_Img(dminR, gminmax.first);
         //    remove_nonfinite_values_Img(dmaxR, gminmax.second);
         }
         // extract the second local minimum from S
+        param->img_dict["confidence_pkrR"] = compute_PKR_confidence(S, dr);
         second_local_minimum_from_costvolume(S, dr, &cr);
+        
         // call subpixel refinement  (modifies out and outcost)
         subpixel_refinement_sgm(S, dr.data, cr.data, refine);
 
@@ -320,7 +321,7 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
 void recursive_multiscale(struct Img &u, struct Img &v,
     struct Img &dmin, struct Img &dmax, struct Img &dminR, struct Img &dmaxR,
     struct Img &dl, struct Img &cl, struct Img &dr, struct Img &cr,
-    int numscales, int scale, void *param)
+    int numscales, int scale, struct mgm_param *param)
 {
 //    char* prefilter, char* refine, char* distance, float truncDist,
 //    const float P1, const float P2, int NDIR,
