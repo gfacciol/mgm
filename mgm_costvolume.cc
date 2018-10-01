@@ -211,7 +211,7 @@ struct Img compute_PKR_confidence(struct costvolume_t &S, struct Img &dl) {
             secondmin = S[i][o];
          }
       }
-      out[i] = secondmin/(firstmin + 0.1);
+      out[i] = secondmin/fmax(firstmin , 0.01);
    }
    return out;
 }

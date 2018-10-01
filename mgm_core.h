@@ -22,8 +22,6 @@ struct mgm_param {
     float aP1, aP2;
     float aThresh;
     float ZOOMFACTOR;
-    struct Img *altweightu;
-    struct Img *altweightv;
     std::map<std::string, struct Img> img_dict; // input and output dictionary of images
     std::map<std::string, float> var_dict;
     std::map<std::string, std::string> str_dict;

@@ -61,6 +61,8 @@ int main(int argc, char* argv[])
         fprintf (stderr, "    [-S scales    (3)]: Number of scales\n");
         fprintf (stderr, "    [-Rd  fname]: right disparity map\n");
         fprintf (stderr, "    [-Rc  fname]: right cost map\n");
+		  fprintf (stderr, "    [-wl  fname]: regularization weights for the left disparity map\n");
+		  fprintf (stderr, "    [-wr  fname]: regularization weights for the right disparity map\n");
         fprintf (stderr, "    [-confidence_costL      fnameL -confidence_costR      fnameR]: left and right cost confidence maps\n");
         fprintf (stderr, "    [-confidence_pkrL       fnameL -confidence_pkrR       fnameR]: left and right PKR confidence maps\n");
         fprintf (stderr, "    [-confidence_consensusL fnameL -confidence_consensusR fnameR]: left and right consensus confidence maps\n");
@@ -99,12 +101,16 @@ int main(int argc, char* argv[])
     char* refine    = pick_option(&argc, &argv, (char*) "s", (char*) "none"); //{none|vfit|parabola|cubic}
     float truncDist = atof(pick_option(&argc, &argv, (char*) "truncDist",  (char*) "inf"));
     int   scales    = atoi(pick_option(&argc, &argv, (char*) "S",  (char*) "3"));
+
+    char* wl_name   = pick_option(&argc, &argv, (char*) "wl", (char*) "");   //weights left
+    char* wr_name   = pick_option(&argc, &argv, (char*) "wr", (char*) "");   //weights right
+
     
     // catch all the other optional output filenames
-   char * const keyword_parameters[] = {(char*) "confidence_consensusL", (char*) "confidence_consensusR", // path consensus confidence
-                                        (char*) "confidence_costL",      (char*) "confidence_costR",  // cost confidence
-                                        (char*) "confidence_pkrL",       (char*) "confidence_pkrR",  // cost confidence
-                                        (char*) "Rd",                    (char*) "Rc"}; // right disparity and cost maps
+    char * const keyword_parameters[] = {(char*) "confidence_consensusL", (char*) "confidence_consensusR", // path consensus confidence
+                                         (char*) "confidence_costL",      (char*) "confidence_costR",  // cost confidence
+                                         (char*) "confidence_pkrL",       (char*) "confidence_pkrR",  // cost confidence
+                                         (char*) "Rd",                    (char*) "Rc"}; // right disparity and cost maps
     int num_keyword_parameters = 8;
     std::vector< std::pair< std::string, std::string > >  other_keyword_parameters;
     for(int i = 0; i<num_keyword_parameters; i++) {
@@ -162,7 +168,13 @@ int main(int argc, char* argv[])
     for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
 
     // handle multiscale
-    struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,1.0, NULL, NULL};
+    struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,1.0};
+    // load weights for the regularization term
+    if(strcmp (wl_name,"")!=0 && strcmp (wr_name,"")!=0) {
+       param.img_dict["wl"] = iio_read_vector_split(wl_name);
+       param.img_dict["wr"] = iio_read_vector_split(wr_name);
+    }
+
     recursive_multiscale(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, scales, 0, &param);
 
     // handle subpixel refinement 
@@ -170,7 +182,7 @@ int main(int argc, char* argv[])
        // disparity range is estimated from min,max on a 9x9 window and enlarged by +-2 
        update_dmin_dmax(outoff,  &dminI,  &dmaxI , dminI,  dmaxI,  2, 4);
        update_dmin_dmax(outoffR, &dminRI, &dmaxRI, dminRI, dmaxRI, 2, 4);
-       struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX(), NULL, NULL};
+       struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
        recursive_multiscale(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, 0, 0, &param);
     }
 
@@ -180,7 +192,6 @@ int main(int argc, char* argv[])
     struct Img syn = backproject_image(u, v, outoff);
     if(f_cost) iio_write_vector_split(f_cost, outcost);
     if(f_back) iio_write_vector_split(f_back, syn);
-
 
 
     param.img_dict["Rd"] = outoffR;

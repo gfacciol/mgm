@@ -133,8 +133,6 @@ int main(int argc, char* argv[])
    char* prefilter = pick_option(&argc, &argv, (char*) "p", (char*) "none"); //{none|census|sobelx}
    char* refine    = pick_option(&argc, &argv, (char*) "s", (char*) "none"); //{none|vfit|parabola|cubic}
    float truncDist = atof(pick_option(&argc, &argv, (char*) "truncDist",  (char*) "inf"));
-//   char* f_outR    = pick_option(&argc, &argv, (char*) "Rd", (char*) "");   // right disparity and cost maps
-//   char* f_costR   = pick_option(&argc, &argv, (char*) "Rc", (char*) "");   //
 
    char* wl_name   = pick_option(&argc, &argv, (char*) "wl", (char*) "");   //weights left
    char* wr_name   = pick_option(&argc, &argv, (char*) "wr", (char*) "");   //weights right
@@ -170,16 +168,6 @@ int main(int argc, char* argv[])
    remove_nonfinite_values_Img(v, 0);
 
 
-   // weights for the regularization term
-	struct Img wl, wr, *altu=NULL, *altv=NULL;
-   if(strcmp (wl_name,"")!=0 && strcmp (wr_name,"")!=0) {
-      wl = iio_read_vector_split(wl_name);
-      wr = iio_read_vector_split(wr_name);
-      altu = &wl;
-      altv = &wr;
-   }
-
-
    struct Img dminI(u.nx, u.ny);
    struct Img dmaxI(u.nx, u.ny);
    for(int i=0;i<u.npix;i++) {dminI[i]=dmin; dmaxI[i]=dmax;}
@@ -213,7 +201,12 @@ int main(int argc, char* argv[])
    for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
 
 
-   struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX(), altu, altv};
+   struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
+    // load weights for the regularization term
+    if(strcmp (wl_name,"")!=0 && strcmp (wr_name,"")!=0) {
+       param.img_dict["wl"] = iio_read_vector_split(wl_name);
+       param.img_dict["wr"] = iio_read_vector_split(wr_name);
+    }
 
    mgm_call(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, &param);
 
@@ -222,27 +215,26 @@ int main(int argc, char* argv[])
 	
 	// save the disparity
 	iio_write_vector_split(f_out, outoff);
-    // generate the backprojected image
-    struct Img syn = backproject_image(u, v, outoff);
-    if(f_cost) iio_write_vector_split(f_cost, outcost);
-    if(f_back) iio_write_vector_split(f_back, syn);
-    //if(strcmp (f_outR,"")!=0 )  iio_write_vector_split(f_outR, outoffR);
-    //if(strcmp (f_costR,"")!=0 ) iio_write_vector_split(f_costR, outcostR);
-
-    param.img_dict["Rd"] = outoffR;
-    param.img_dict["Rc"] = outcostR;
+   // generate the backprojected image
+   struct Img syn = backproject_image(u, v, outoff);
+   if(f_cost) iio_write_vector_split(f_cost, outcost);
+   if(f_back) iio_write_vector_split(f_back, syn);
 
 
-    for(int i = 0; i < num_keyword_parameters; i++) {
-       std::string keyword =  other_keyword_parameters[i].first;
-       std::string fname   =  other_keyword_parameters[i].second;
-       if ( fname != "" ) 
-          if (param.img_dict.count(keyword)>0) 
-             iio_write_vector_split( (char*) fname.c_str(), param.img_dict[keyword.c_str()]);
-          else 
-             printf("Ignoring keywork %s NOT FOUND in param.img_dict\n", keyword.c_str());
-    }
+   param.img_dict["Rd"] = outoffR;
+   param.img_dict["Rc"] = outcostR;
 
 
-    return 0;
+   for(int i = 0; i < num_keyword_parameters; i++) {
+      std::string keyword =  other_keyword_parameters[i].first;
+      std::string fname   =  other_keyword_parameters[i].second;
+      if ( fname != "" ) 
+         if (param.img_dict.count(keyword)>0) 
+            iio_write_vector_split( (char*) fname.c_str(), param.img_dict[keyword.c_str()]);
+         else 
+            printf("Ignoring keywork %s NOT FOUND in param.img_dict\n", keyword.c_str());
+   }
+
+
+   return 0;
 }

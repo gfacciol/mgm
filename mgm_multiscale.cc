@@ -173,26 +173,14 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
     float aP2       = param ? param->aP2       : 1;
     float aThresh   = param ? param->aThresh   : INFINITY;
     float ZOOMFACTOR= param ? param->ZOOMFACTOR: 1.0;
-    struct Img* altu= param ? param->altweightu: NULL;
-    struct Img* altv= param ? param->altweightv: NULL;
 
-    //printf("%s %s %s %f, %f, %f, %d, %f, %f, %f, %f",
-    //prefilter,
-    //refine,
-    //distance,
-    //truncDist,
-    //P1, P2,
-    //NDIR,
-    //aP1, aP2,
-    //aThresh,
-    //ZOOMFACTOR);
 
-    // compute weights
+    // compute weights wl and wr that come inside params->img_dict
     struct Img u_w;
     struct Img v_w;
-    if (altu && altv) {
-      u_w = compute_mgm_weights_copyvalue(*altu, aP2, aThresh); // missing aP1 !! TODO
-      v_w = compute_mgm_weights_copyvalue(*altv, aP2, aThresh);
+    if (param->img_dict.count("wl")>0 && param->img_dict.count("wr")>0) {
+      u_w = compute_mgm_weights_copyvalue(param->img_dict["wl"], aP2, aThresh); // missing aP1 !! TODO
+      v_w = compute_mgm_weights_copyvalue(param->img_dict["wr"], aP2, aThresh);
     } else {
       u_w = compute_mgm_weights(u, aP2, aThresh); // missing aP1 !! TODO
       v_w = compute_mgm_weights(v, aP2, aThresh);
@@ -351,9 +339,16 @@ void recursive_multiscale(struct Img &u, struct Img &v,
       struct Img sdl(sdmin);  struct Img scl(sdmin.nx, sdmin.ny,   2);
       struct Img sdr(sdminR); struct Img scr(sdminR.nx, sdminR.ny, 2);
 
+      struct mgm_param sparam(*param); // copy all the params
+      // downsample the regularity weight maps
+      if (param->img_dict.count("wl")>0 && param->img_dict.count("wr")>0) {
+         sparam.img_dict["wl"] = downsample2x(param->img_dict["wl"],0.8);
+         sparam.img_dict["wr"] = downsample2x(param->img_dict["wr"],0.8);
+      }
+
 
       recursive_multiscale(su, sv, sdmin, sdmax, sdminR, sdmaxR,
-                            sdl, scl, sdr, scl, numscales, scale+1, param);
+                            sdl, scl, sdr, scl, numscales, scale+1, &sparam);
 
       upsample2x_disp(sdl, u, &dmin,  &dmax);
       upsample2x_disp(sdr, v, &dminR, &dmaxR);
@@ -375,8 +370,10 @@ void recursive_multiscale(struct Img &u, struct Img &v,
              dl, cl, dr, cr, param);
 
 //{
-//       char name[200]; sprintf(name, "d_%02d%02d.tif", scale,0); // DEBUG
+//       char name[200]; sprintf(name, "/tmp/DEBUGd_%02d%02d.tif", scale,0); // DEBUG
 //	      iio_write_vector_split(name, dl); // DEBUG
+//       sprintf(name, "/tmp/DEBUGw_%02d%02d.tif", scale,0); // DEBUG
+//	      iio_write_vector_split(name, param->img_dict["wl"]); // DEBUG
 //}
 
 }
