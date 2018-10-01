@@ -40,6 +40,72 @@ static char *pick_option(int *c, char ***v, char *o, char *d)
 }
 
 
+extern "C"
+{
+    float *mgm_multi(float *img_u, int nx_u, int ny_u, int nch_u,
+                     float *img_v, int nx_v, int ny_v, int nch_v,
+                     int dmin, int dmax, float P1, float P2,
+                     char *prefilter, char *refine, char *distance,
+                     float truncDist, int NDIR, float aP1, float aP2, float aThresh, int scales)
+    {
+        struct Img u = Img(img_u, nx_u, ny_u, nch_u);
+        struct Img v = Img(img_v, nx_v, ny_v, nch_v);
+
+        remove_nonfinite_values_Img(u, 0);
+        remove_nonfinite_values_Img(v, 0);
+
+        struct Img dminI(u.nx, u.ny);
+        struct Img dmaxI(u.nx, u.ny);
+        for(int i=0;i<u.npix;i++) {dminI[i]=dmin; dmaxI[i]=dmax;}
+
+//        if(strcmp (in_min_disp_file,"")!=0 ){
+//            dminI = iio_read_vector_split(in_min_disp_file);
+//            dmaxI = iio_read_vector_split(in_max_disp_file);
+//            // sanity check for nans
+//            remove_nonfinite_values_Img(dminI, dmin);
+//            remove_nonfinite_values_Img(dmaxI, dmax);
+//
+//            // more hacks to prevent errors from bad inputs (min>=max)
+//            for (int i=0;i<u.npix;i++) {
+//                if (dmaxI[i] < dminI[i] + 1) dmaxI[i] = ceil(dminI[i] + 1);
+//            }
+//        }
+
+
+        P1 = P1*u.nch; //8
+        P2 = P2*u.nch; //32
+
+        // output variables
+        struct Img outoff  = Img(u.nx, u.ny);
+        struct Img outcost = Img(u.nx, u.ny, 2);
+
+        // variables for LR
+        struct Img outoffR  = Img(v.nx, v.ny);
+        struct Img outcostR = Img(v.nx, v.ny, 2);
+        struct Img dminRI(v.nx, v.ny);
+        struct Img dmaxRI(v.nx, v.ny);
+        for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
+
+        // handle multiscale
+        struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,1.0, NULL, NULL};
+        recursive_multiscale(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, scales, 0, (void*)&param);
+
+        // handle subpixel refinement
+        if(SUBPIX()>1) {
+           // disparity range is estimated from min,max on a 9x9 window and enlarged by +-2
+           update_dmin_dmax(outoff,  &dminI,  &dmaxI , dminI,  dmaxI,  2, 4);
+           update_dmin_dmax(outoffR, &dminRI, &dmaxRI, dminRI, dmaxRI, 2, 4);
+           struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX(), NULL, NULL};
+           recursive_multiscale(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, 0, 0, (void*)&param);
+        }
+
+        // generate the backprojected image
+        struct Img syn = backproject_image(u, v, outoff);
+
+        return &(outoff.data.front());
+    }
+}
+
 
 
 int main(int argc, char* argv[])
@@ -106,67 +172,25 @@ int main(int argc, char* argv[])
 
     printf("%d %d\n", dmin, dmax);
 
-
     // read input
-    struct Img u = iio_read_vector_split(f_u);
-    struct Img v = iio_read_vector_split(f_v);
+    int nx_u, ny_u, nch_u;
+	float *img_u = iio_read_image_float_split(f_u, &nx_u, &ny_u, &nch_u);
 
-    remove_nonfinite_values_Img(u, 0);
-    remove_nonfinite_values_Img(v, 0);
+    int nx_v, ny_v, nch_v;
+	float *img_v = iio_read_image_float_split(f_v, &nx_v, &ny_v, &nch_v);
 
-    struct Img dminI(u.nx, u.ny);
-    struct Img dmaxI(u.nx, u.ny);
-    for(int i=0;i<u.npix;i++) {dminI[i]=dmin; dmaxI[i]=dmax;}
+    // run mgm_multi
+    float *outoff = mgm_multi(img_u, nx_u, ny_u, nch_u, img_v, nx_v, ny_v,
+                              nch_v, dmin, dmax, P1, P2, prefilter, refine,
+                              distance, truncDist, NDIR, aP1, aP2, aThresh,
+                              scales);
 
-    if(strcmp (in_min_disp_file,"")!=0 ){
-        dminI = iio_read_vector_split(in_min_disp_file);
-        dmaxI = iio_read_vector_split(in_max_disp_file);
-        // sanity check for nans
-        remove_nonfinite_values_Img(dminI, dmin);
-        remove_nonfinite_values_Img(dmaxI, dmax);
-
-        // more hacks to prevent errors from bad inputs (min>=max)
-        for (int i=0;i<u.npix;i++) {
-            if (dmaxI[i] < dminI[i] + 1) dmaxI[i] = ceil(dminI[i] + 1);
-        }
-    }
-
-
-    P1 = P1*u.nch; //8
-    P2 = P2*u.nch; //32
-
-    // output variables
-    struct Img outoff  = Img(u.nx, u.ny);
-    struct Img outcost = Img(u.nx, u.ny, 2);
-
-    // variables for LR
-    struct Img outoffR  = Img(v.nx, v.ny);
-    struct Img outcostR = Img(v.nx, v.ny, 2);
-    struct Img dminRI(v.nx, v.ny);
-    struct Img dmaxRI(v.nx, v.ny);
-    for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
-
-    // handle multiscale
-    struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,1.0, NULL, NULL};
-    recursive_multiscale(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, scales, 0, (void*)&param);
-
-    // handle subpixel refinement 
-    if(SUBPIX()>1) {
-       // disparity range is estimated from min,max on a 9x9 window and enlarged by +-2 
-       update_dmin_dmax(outoff,  &dminI,  &dmaxI , dminI,  dmaxI,  2, 4);
-       update_dmin_dmax(outoffR, &dminRI, &dmaxRI, dminRI, dmaxRI, 2, 4);
-       struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX(), NULL, NULL};
-       recursive_multiscale(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, 0, 0, (void*)&param);
-    }
-
-    // save the disparity
-    iio_write_vector_split(f_out, outoff);
-    // generate the backprojected image
-    struct Img syn = backproject_image(u, v, outoff);
-    if(f_cost) iio_write_vector_split(f_cost, outcost);
-    if(f_back) iio_write_vector_split(f_back, syn);
-    if(strcmp (f_outR,"")!=0 )  iio_write_vector_split(f_outR, outoffR);
-    if(strcmp (f_costR,"")!=0 ) iio_write_vector_split(f_costR, outcostR);
+    // save output files images
+	iio_save_image_float_split(f_out, outoff, nx_u, ny_u, nch_u);
+//    if(f_cost) iio_write_vector_split(f_cost, outcost);
+//    if(f_back) iio_write_vector_split(f_back, syn);
+//    if(strcmp (f_outR,"")!=0 )  iio_write_vector_split(f_outR, outoffR);
+//    if(strcmp (f_costR,"")!=0 ) iio_write_vector_split(f_costR, outcostR);
 
     return 0;
 }

@@ -5,10 +5,15 @@ CPPFLAGS := -Iiio
 LDLIBS   := -lfftw3 -lpng -ltiff -ljpeg -lm
 
 
+LIB       = libmgm_multi.so
 BIN       = mgm_multi  mgm
 OBJ       = mgm_core.o  mgm_costvolume.o  mgm_multiscale.o  census_tools.o \
             stereo_utils.o  point.o  shear.o  img.o  iio.o
 
+$(LIB) : $(OBJ) main_mgm_multi.o
+	$(CXX) -shared -o $@ $^ $(LDLIBS)
+
+lib       : $(LIB)
 all       : $(BIN)
 iio.o     : iio/iio.c       ; $(CC) $(CFLAGS) $(CPPFLAGS) -c $^ -o $@
 %         : main_%.o $(OBJ) ; $(CXX) $(LDFLAGS) $^ -o $@ $(LDLIBS)
