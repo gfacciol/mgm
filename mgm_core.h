@@ -11,6 +11,7 @@ SMART_PARAMETER(MEDIAN,0)
 SMART_PARAMETER(WITH_MGM2,0);
 
 #include <map>
+#include <string>
 struct mgm_param {
     char* prefilter;
     char* refine;
