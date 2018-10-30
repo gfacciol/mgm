@@ -174,6 +174,10 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
     float aThresh   = param ? param->aThresh   : INFINITY;
     float ZOOMFACTOR= param ? param->ZOOMFACTOR: 1.0;
 
+    // special case: receiving a costvolume as input
+    if (param->str_dict.count("inputCostVolume") > 0) {
+       param->ZOOMFACTOR = 1; // ignore zoom factor
+    }
 
     // compute weights wl and wr that come inside params->img_dict
     struct Img u_w;
@@ -201,21 +205,31 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
     {
         //if(scale==0 && i>0) continue;
 
+        //////// START left-right pass
         struct costvolume_t CC, S;
+        struct Img zdmin(dmin), zdmax(dmax);
+        param->var_dict["right"] = 0;
 
-        // scale dmin - dmax by the SUBPIX factor
-        struct Img zdmin(dmin); for(int i = 0; i < zdmin.npix; i++) zdmin[i] *= ZOOMFACTOR;
-        struct Img zdmax(dmax); for(int i = 0; i < zdmax.npix; i++) zdmax[i] *= ZOOMFACTOR;
-        CC = allocate_and_fill_sgm_costvolume (u, v, zdmin, zdmax, prefilter, distance, truncDist, ZOOMFACTOR);
+        // prepare the costvolume 
+        if (param->str_dict.count("inputCostVolume") > 0) {
+           // load the costvolume from disk and override dmin, dmax
+           read_costvolume((char*)param->str_dict["inputCostVolume"].c_str(), CC, u.nx, u.ny, zdmin, zdmax);
+           printf("Reading Costvolume: %d %d %f %f\n", u.nx, u.ny, image_minmax(zdmin).first, image_minmax(zdmax).second);
+        } else {
+           // scale dmin - dmax by the SUBPIX factor and compute costvolume
+           for(int i = 0; i < zdmin.npix; i++) zdmin[i] *= ZOOMFACTOR; 
+           for(int i = 0; i < zdmax.npix; i++) zdmax[i] *= ZOOMFACTOR;
+           CC = allocate_and_fill_sgm_costvolume (u, v, zdmin, zdmax, prefilter, distance, truncDist, ZOOMFACTOR);
+        }
+
+
         if (DUMP_COSTVOLUME()) {
            int vdmin = image_minmax(zdmin).first;
            int vdmax = image_minmax(zdmax).second;
            printf("%d %d %d %d\n", u.nx, u.ny, vdmin, vdmax);
-           dump_costvolume(CC, u.nx, u.ny, vdmin, vdmax,  (char*) "costvolume_right.dat"); 
+           dump_costvolume(CC, u.nx, u.ny, vdmin, vdmax,  (char*) "costvolume_left.dat"); 
         }
 
-        //////// left-right pass
-        param->var_dict["right"] = 0;
 
         //for(int i = 0; i < TSGM_ITER(); i++)
         {
@@ -238,18 +252,34 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
 
         for(int i = 0; i < dl.npix; i++) dl[i] /= ZOOMFACTOR; // scale the solution back by the SUBPIX factor
 
-        struct Img zdminR(dminR); for(int i = 0; i < zdminR.npix; i++) zdminR[i] *= ZOOMFACTOR;
-        struct Img zdmaxR(dmaxR); for(int i = 0; i < zdmaxR.npix; i++) zdmaxR[i] *= ZOOMFACTOR;
-        CC = allocate_and_fill_sgm_costvolume (v, u, zdminR, zdmaxR, prefilter, distance, truncDist, ZOOMFACTOR);
+
+
+        //////// START right-left pass
+        struct Img zdminR(dminR), zdmaxR(dmaxR); 
+        param->var_dict["right"] = 1;
+
+        // prepare the costvolume 
+        if (param->str_dict.count("inputCostVolume") > 0) {
+           // load the costvolume from disk and override dmin, dmax
+           CC = right_costvolume_from_left(CC, u.nx, u.ny, v.nx, v.ny, zdminR, zdmaxR);
+           printf("Get Right Costvolume from Left: %d %d %f %f\n", u.nx, u.ny, image_minmax(zdminR).first, image_minmax(zdmaxR).second);
+        } else {
+           // scale dmin - dmax by the SUBPIX factor and compute costvolume
+           for(int i = 0; i < zdminR.npix; i++) zdminR[i] *= ZOOMFACTOR;
+           for(int i = 0; i < zdmaxR.npix; i++) zdmaxR[i] *= ZOOMFACTOR;
+           CC = allocate_and_fill_sgm_costvolume (v, u, zdminR, zdmaxR, prefilter, distance, truncDist, ZOOMFACTOR);
+           // this is actually faster than re-computing the costvolume
+           //CC = right_costvolume_from_left(CC, u.nx, u.ny, v.nx, v.ny, zdminR, zdmaxR);
+        }
+
+
         if (DUMP_COSTVOLUME()) {
            int vdmin = image_minmax(zdminR).first;
            int vdmax = image_minmax(zdmaxR).second;
            printf("%d %d %d %d\n", v.nx, v.ny, vdmin, vdmax);
-           dump_costvolume(CC, v.nx, v.ny, vdmin, vdmax,  (char*) "costvolume_left.dat"); 
+           dump_costvolume(CC, v.nx, v.ny, vdmin, vdmax,  (char*) "costvolume_right.dat"); 
         }
 
-        //////// right-left pass
-        param->var_dict["right"] = 1;
 
         //for(int i = 0; i < TSGM_ITER(); i++)
         {

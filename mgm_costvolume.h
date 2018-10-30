@@ -289,5 +289,10 @@ struct Img compute_PKR_confidence(struct costvolume_t &S, struct Img &dl);
 // dumps the costvolume in a file with format:
 // nx(int x1), ny(int x1), ndisp(int x1), minimum_disp(int x1), costs(float x nx*ny*ndisp)
 void dump_costvolume(struct costvolume_t CC, int nx, int ny, int dmin, int dmax, char* cvfilename);
+// reads the costvolume from a file with format: 
+// nx(int x1), ny(int x1), ndisp(int x1), minimum_disp(int x1), costs(float x nx*ny*ndisp)
+void read_costvolume(char* cvfilename, struct costvolume_t &CC, int nx, int ny,  struct Img &dmin, struct Img &dmax);
+// computes the right costvolume rearranging the costs contained in the left one
+struct costvolume_t right_costvolume_from_left(struct costvolume_t &CCL, int nxL, int nyL, int nxR, int nyR, struct Img &dminR, struct Img &dmaxR);
 
 #endif //COSTVOLUME_H_

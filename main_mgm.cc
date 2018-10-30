@@ -99,6 +99,7 @@ int main(int argc, char* argv[])
       fprintf (stderr, "        [-confidence_costL      fnameL -confidence_costR      fnameR]: left and right cost confidence maps\n");
       fprintf (stderr, "        [-confidence_pkrL       fnameL -confidence_pkrR       fnameR]: left and right PKR confidence maps\n");
       fprintf (stderr, "        [-confidence_consensusL fnameL -confidence_consensusR fnameR]: left and right consensus confidence maps\n");
+      fprintf (stderr, "        [-inputCostVolume filename]: file containing the costvolume of the left image\n");
 		fprintf (stderr, "        ENV: CENSUS_NCC_WIN=3   : size of the window for census and NCC\n");
 		fprintf (stderr, "        ENV: TESTLRRL=1   : lrrl\n");
 		fprintf (stderr, "        ENV: MEDIAN=0     : radius of the median filter postprocess\n");
@@ -136,6 +137,7 @@ int main(int argc, char* argv[])
 
    char* wl_name   = pick_option(&argc, &argv, (char*) "wl", (char*) "");   //weights left
    char* wr_name   = pick_option(&argc, &argv, (char*) "wr", (char*) "");   //weights right
+   char* inputCV   = pick_option(&argc, &argv, (char*) "inputCostVolume", (char*)"");
 
 
    // catch all the other optional output filenames
@@ -202,11 +204,14 @@ int main(int argc, char* argv[])
 
 
    struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
-    // load weights for the regularization term
-    if(strcmp (wl_name,"")!=0 && strcmp (wr_name,"")!=0) {
-       param.img_dict["wl"] = iio_read_vector_split(wl_name);
-       param.img_dict["wr"] = iio_read_vector_split(wr_name);
-    }
+   // load weights for the regularization term
+   if(strcmp (wl_name,"")!=0 && strcmp (wr_name,"")!=0) {
+      param.img_dict["wl"] = iio_read_vector_split(wl_name);
+      param.img_dict["wr"] = iio_read_vector_split(wr_name);
+   }
+   // input Costvolume
+   if(strcmp(inputCV, "") != 0) param.str_dict["inputCostVolume"] = inputCV;
+
 
    mgm_call(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, &param);
 

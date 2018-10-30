@@ -232,3 +232,78 @@ void dump_costvolume(struct costvolume_t CC, int nx, int ny, int dmin, int dmax,
    }
    fclose(fid);
 }
+
+
+// reads the costvolume from a file with format: 
+// nx(int x1), ny(int x1), ndisp(int x1), minimum_disp(int x1), costs(float x nx*ny*ndisp)
+void read_costvolume(char* cvfilename, struct costvolume_t &CC, int nx, int ny, struct Img &zdmin, struct Img &zdmax) {
+   FILE* fid = fopen(cvfilename, "rb");
+   int meta[4]; // {nx,ny,dmax-dmin+1,dmin};
+   fread(meta, sizeof(int), 4, fid);
+
+   if (meta[0] != nx || meta[1] != ny) printf("Attention metas don't conicide\n");
+
+   // overwrite dmin, dmax
+   int dmin = meta[3]; 
+   int dmax = dmin+meta[2]-1;
+
+   for(int i = 0; i < zdmin.npix; i++) zdmin[i] = dmin;
+   for(int i = 0; i < zdmax.npix; i++) zdmax[i] = dmax;
+
+   // create costvolume
+   CC.vectors = std::vector< Dvec >(nx*ny);
+
+   // fill costvolume
+   for(int i=0;i<nx*ny;i++) {
+
+      CC[i].init(dmin,dmax);
+      for(int o=dmin;o<=dmax;o++) {
+         float value=0;
+         fread(&value, sizeof(float), 1, fid); 
+         CC[i].set(o,value);
+      }
+
+   }
+   fclose(fid);
+}
+
+
+// computes the right costvolume rearranging the costs contained in the left one
+struct costvolume_t right_costvolume_from_left(struct costvolume_t &CCL, int nxL, int nyL, int nxR, int nyR, struct Img &dminR, struct Img &dmaxR) {
+
+   for(int i = 0; i < dminR.npix; i++) dminR[i] = INFINITY;
+   for(int i = 0; i < dmaxR.npix; i++) dmaxR[i] = -INFINITY; 
+
+   for(int y=0;y<nyL;y++) {
+   for(int x=0;x<nxL;x++) {
+      // for a pixel in the right image
+      int i=x+y*nxL;
+      // update dmin and dmax on the left image
+      for(int o=CCL[i].min;o<=CCL[i].max;o++) {
+         if (x+o >=0 && x+o < nxR) {
+             dminR[x+o+y*nxR] = fmin(dminR[x+o+y*nxR], -o);
+             dmaxR[x+o+y*nxR] = fmax(dmaxR[x+o+y*nxR], -o);
+         }
+      }
+   }
+   }
+
+   // allocate the left costvolume with the right disparity range
+   struct costvolume_t CCR = allocate_costvolume (dminR, dmaxR);
+
+   // fill the costs from the right costvolume
+   for(int y=0;y<nyR;y++) {
+   for(int x=0;x<nxR;x++) {
+      int i=x+y*nxR;
+      for(int o=CCR[i].min;o<=CCR[i].max;o++) {
+         if (x+o >=0 && x+o < nxL) {
+            CCR[i].set(o, CCL[x+o +y*nxL][-o]);
+         }
+
+      }
+   }
+   }
+   return CCR;
+
+}
+
