@@ -111,7 +111,7 @@ struct Dvec
       if (i>=this->min && i<=this->max) {
          int idx = i-this->min;
          float &x = data[idx];
-//         #pragma omp atomic
+         #pragma omp atomic
             x+=value;
          minval=INFINITY;  // invalidate minval cache
       }
