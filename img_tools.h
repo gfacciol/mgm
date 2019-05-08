@@ -31,7 +31,7 @@ inline struct Img iio_read_vector_split(char *nm)
 inline void iio_write_vector_split(char *nm, struct Img &out)
 {
 	// .front() -> .data() in C++11
-	iio_save_image_float_split(nm, &(out.data.front()), out.nx, out.ny, out.nch);
+	iio_write_image_float_split(nm, &(out.data.front()), out.nx, out.ny, out.nch);
 }
 
 

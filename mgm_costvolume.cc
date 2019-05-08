@@ -239,9 +239,10 @@ void dump_costvolume(struct costvolume_t CC, int nx, int ny, int dmin, int dmax,
 void read_costvolume(char* cvfilename, struct costvolume_t &CC, int nx, int ny, struct Img &zdmin, struct Img &zdmax) {
    FILE* fid = fopen(cvfilename, "rb");
    int meta[4]; // {nx,ny,dmax-dmin+1,dmin};
-   fread(meta, sizeof(int), 4, fid);
+   size_t r = fread(meta, sizeof(int), 4, fid);
 
-   if (meta[0] != nx || meta[1] != ny) printf("Attention metas don't conicide\n");
+   if (r != 4 || meta[0] != nx || meta[1] != ny)
+	   fprintf(stderr, "Bad costvolume header on file \"%s\"\n",cvfilename);
 
    // overwrite dmin, dmax
    int dmin = meta[3]; 
@@ -259,7 +260,9 @@ void read_costvolume(char* cvfilename, struct costvolume_t &CC, int nx, int ny, 
       CC[i].init(dmin,dmax);
       for(int o=dmin;o<=dmax;o++) {
          float value=0;
-         fread(&value, sizeof(float), 1, fid); 
+         size_t r = fread(&value, sizeof(float), 1, fid);
+	 if (r != 1)
+		 fprintf(stderr, "short costvolume \"%s\"!\n", cvfilename);
          CC[i].set(o,value);
       }
 
