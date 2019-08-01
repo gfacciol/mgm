@@ -1,27 +1,29 @@
 /* Copyright (C) 2015, Gabriele Facciolo <facciolo@cmla.ens-cachan.fr>,
  *                     Carlo de Franchis <carlo.de-franchis@ens-cachan.fr>,
  *                     Enric Meinhardt <enric.meinhardt@cmla.ens-cachan.fr>*/
-#include "stdlib.h"
-#include "stdio.h"
-#include "string.h"
-#include "math.h"
-#include <numeric>
-#include <algorithm>
-#include <vector>
-#include <cstring>
-#include <iostream>
-#include <cmath>
-#include "assert.h"
+// #include "stdlib.h"
+// #include "stdio.h"
+// #include "string.h"
+// #include "math.h"
+// #include <numeric>
+// #include <algorithm>
+// #include <vector>
+// #include <cstring>
+// #include <iostream>
+// #include <cmath>
+// #include "assert.h"
+//
+// #include "smartparameter.h"
+//
+// //// a structure to wrap images
+// #include "img_interp.h"
+// #include "point.h"
+//
+// #include "img_tools.h"
 
-#include "smartparameter.h"
+#include "mgm/mgm.h"
 
-//// a structure to wrap images 
-#include "img_interp.h"
-#include "point.h"
-
-#include "img_tools.h"
-
-// // not used here but generally useful 
+// // not used here but generally useful
 // typedef std::vector<float> FloatVector;
 
 
@@ -29,12 +31,12 @@
 
 /********************** MGM *****************************/
 
-#include "img_interp.h"
-#include "img_tools.h"
-
-
-#include "mgm_multiscale.h"
-#include "stereo_utils.h"
+// #include "img_interp.h"
+// #include "img_tools.h"
+//
+//
+// #include "mgm_multiscale.h"
+// #include "stereo_utils.h"
 
 
 // c: pointer to original argc
@@ -67,7 +69,7 @@ SMART_PARAMETER(TSGM_FIX_OVERCOUNT,1);
 SMART_PARAMETER(TSGM_2LMIN,0);
 SMART_PARAMETER(USE_TRUNCATED_LINEAR_POTENTIALS,0);
 
-SMART_PARAMETER(SUBPIX,1.0)
+SMART_PARAMETER(SUBPIX,1.0);
 
 //SMART_PARAMETER(WITH_MGM2,0);
 
@@ -77,8 +79,11 @@ SMART_PARAMETER(SUBPIX,1.0)
 
 
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
+  // std::cout << "TSGM " << TSGM() << std::endl;
+  // TSGM(true, 2); // Reset TSGM here
+  // std::cout << "TSGM " << TSGM() << std::endl;
 	/* patameter parsing - parameters*/
 	if(argc<4)
 	{
@@ -115,8 +120,8 @@ int main(int argc, char* argv[])
 		fprintf (stderr, "                      : The potential they describe becomes:  V(p,q) = min(P2,  P1*|p-q|)\n");
 		return 1;
 	}
-	
-	
+
+
 	//read the parameters
    int i = 1;
    char *in_min_disp_file = pick_option(&argc, &argv, (char*) "m", (char*) "");
@@ -158,7 +163,7 @@ int main(int argc, char* argv[])
 	char* f_out   = (argc>i) ? argv[i] : NULL;      i++;
 	char* f_cost  = (argc>i) ? argv[i] : NULL;      i++;
 	char* f_back  = (argc>i) ? argv[i] : NULL;      i++;
-	
+
 	printf("%d %d\n", dmin, dmax);
 
 
@@ -186,11 +191,11 @@ int main(int argc, char* argv[])
          if (dmaxI[i] < dminI[i] + 1) dmaxI[i] = ceil(dminI[i] + 1);
       }
    }
-	
+
 
 	P1 = P1*u.nch; //8
 	P2 = P2*u.nch; //32
-	
+
 	// call
 	struct Img outoff  = Img(u.nx, u.ny);
 	struct Img outcost = Img(u.nx, u.ny, 2);
@@ -217,7 +222,6 @@ int main(int argc, char* argv[])
 
 
 
-	
 	// save the disparity
 	iio_write_vector_split(f_out, outoff);
    // generate the backprojected image
@@ -233,10 +237,10 @@ int main(int argc, char* argv[])
    for(int i = 0; i < num_keyword_parameters; i++) {
       std::string keyword =  other_keyword_parameters[i].first;
       std::string fname   =  other_keyword_parameters[i].second;
-      if ( fname != "" ) 
-         if (param.img_dict.count(keyword)>0) 
+      if ( fname != "" )
+         if (param.img_dict.count(keyword)>0)
             iio_write_vector_split( (char*) fname.c_str(), param.img_dict[keyword.c_str()]);
-         else 
+         else
             printf("Ignoring keywork %s NOT FOUND in param.img_dict\n", keyword.c_str());
    }
 

@@ -1,20 +1,22 @@
 /* Copyright 2016, Gabriele Facciolo <facciolo@cmla.ens-cachan.fr> */
-#include "stdio.h"
-#include <vector>
-#include <iostream>
-#include "assert.h"
 
-#include "smartparameter.h"
-
-//// a structure to wrap images
-// // not used here but generally useful
-// typedef std::vector<float> FloatVector;
-#include "img_interp.h"
-#include "img_tools.h"
-
-
-#include "mgm_multiscale.h"
-#include "stereo_utils.h"
+#include "mgm/mgm.h"
+// #include "stdio.h"
+// #include <vector>
+// #include <iostream>
+// #include "assert.h"
+//
+// #include "smartparameter.h"
+//
+// //// a structure to wrap images
+// // // not used here but generally useful
+// // typedef std::vector<float> FloatVector;
+// #include "img_interp.h"
+// #include "img_tools.h"
+//
+//
+// #include "mgm_multiscale.h"
+// #include "stereo_utils.h"
 
 
 SMART_PARAMETER(SUBPIX,1.0)
@@ -107,7 +109,7 @@ int main(int argc, char* argv[])
     char* wr_name   = pick_option(&argc, &argv, (char*) "wr", (char*) "");   //weights right
     char* inputCV   = pick_option(&argc, &argv, (char*) "inputCostVolume", (char*)"");
 
-    
+
     // catch all the other optional output filenames
     char * const keyword_parameters[] = {(char*) "confidence_consensusL", (char*) "confidence_consensusR", // path consensus confidence
                                          (char*) "confidence_costL",      (char*) "confidence_costR",  // cost confidence
@@ -119,7 +121,7 @@ int main(int argc, char* argv[])
        char* fname = pick_option(&argc, &argv, keyword_parameters[i], (char*)"");
        other_keyword_parameters.push_back( std::pair< std::string, std::string>( keyword_parameters[i], fname )  );
     }
-    
+
 
     char* f_u     = (argc>i) ? argv[i] : NULL;      i++;
     char* f_v     = (argc>i) ? argv[i] : NULL;      i++;
@@ -184,9 +186,9 @@ int main(int argc, char* argv[])
 
     recursive_multiscale(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, scales, 0, &param);
 
-    // handle subpixel refinement 
+    // handle subpixel refinement
     if(SUBPIX()>1) {
-       // disparity range is estimated from min,max on a 9x9 window and enlarged by +-2 
+       // disparity range is estimated from min,max on a 9x9 window and enlarged by +-2
        update_dmin_dmax(outoff,  &dminI,  &dmaxI , dminI,  dmaxI,  2, 4);
        update_dmin_dmax(outoffR, &dminRI, &dmaxRI, dminRI, dmaxRI, 2, 4);
        struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
@@ -208,10 +210,10 @@ int main(int argc, char* argv[])
     for(int i = 0; i < num_keyword_parameters; i++) {
        std::string keyword =  other_keyword_parameters[i].first;
        std::string fname   =  other_keyword_parameters[i].second;
-       if ( fname != "" ) 
-          if (param.img_dict.count(keyword)>0) 
+       if ( fname != "" )
+          if (param.img_dict.count(keyword)>0)
              iio_write_vector_split( (char*) fname.c_str(), param.img_dict[keyword.c_str()]);
-          else 
+          else
              printf("Ignoring keywork %s NOT FOUND in param.img_dict\n", keyword.c_str());
     }
 
