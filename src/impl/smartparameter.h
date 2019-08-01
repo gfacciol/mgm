@@ -7,27 +7,33 @@
 
 /*/ a smart parameter is just like a regular parameter, but it can be
 // re-defined at the shell-environment.  Instead of
-// 
+//
 // #define NUMBER 42
 // ...
 // printf("%g", NUMBER);
-// 
+//
 // do
 // SMART_PARAMETER(NUMBER,42)
 // ...
 // printf("%g", NUMBER());
-// 
+//
 // Notice that the environment only gets queried once, at the first use.
-// 
+//
 */
 #ifndef VERBOSE_SMART_PARAMETER
 #define VERBOSE_SMART_PARAMETER 0
 #endif
 
-#define SMART_PARAMETER(n,v) static double n(void)\
+// Note that due to the presence of the global variables, v here is ignored
+// TODO: Refactor all other code to remove the v and then remove this
+#define SMART_PARAMETER(n,v) static double n(bool reset=false, double reset_val=0.0)\
 {\
-   static int smapa_known_ ## n = false;\
-   static double smapa_value_ ## n = v;\
+   extern int smapa_known_ ## n;\
+   extern double smapa_value_ ## n;\
+   if (reset)\
+   {\
+      smapa_value_ ## n = reset_val;\
+   }\
    if (!smapa_known_ ## n)\
    {\
       int r;\
@@ -50,11 +56,16 @@
    return smapa_value_ ## n;\
 }
 
-
-#define SMART_PARAMETER_INT(n,v) static int n(void)\
+// Note that due to the presence of the global variables, v here is ignored
+// TODO: Refactor all other code to remove the v and then remove this
+#define SMART_PARAMETER_INT(n,v) static int n(bool reset=false, int reset_val=0)\
 {\
-   static int smapa_known_ ## n = false;\
-   static int smapa_value_ ## n = v;\
+   extern int smapa_known_ ## n;\
+   extern int smapa_value_ ## n;\
+   if (reset)\
+   {\
+      smapa_value_ ## n = reset_val;\
+   }\
    if (!smapa_known_ ## n)\
    {\
       int r;\
@@ -76,5 +87,3 @@
    }\
    return smapa_value_ ## n;\
 }
-
-
