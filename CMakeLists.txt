@@ -1,10 +1,11 @@
 #Copyright 2014, Gabriele Facciolo <facciolo@cmla.ens-cachan.fr> 
 cmake_minimum_required(VERSION 2.8)
+project(mgm)
 
+
+## SETUP ##
 
 # SETUP A MAKE CLEAN TO CLEAN EVERYTHING
-#
-#
 set_directory_properties (PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES 
       "CMakeCache.txt;CMakeFiles;Makefile;cmake_install.cmake")
 
@@ -15,8 +16,8 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 if (NOT TARGET IIOLIB)
-   include_directories("iio")
-   add_subdirectory(iio)
+   include_directories(extern/iio)
+   add_subdirectory(extern/iio)
 endif() 
 SET( LIBS ${LIBS} IIOLIB)
 
@@ -38,10 +39,35 @@ else ()
   set (CMAKE_C_STANDARD 99)
 endif ()
 
-#
-add_executable (mgm_multi main_mgm_multi.cc img.cc point.cc mgm_costvolume.cc mgm_core.cc shear.c census_tools.cc stereo_utils.cc stereo_utils.h mgm_multiscale.cc mgm_multiscale.h)
-target_link_libraries(mgm_multi ${LIBS})
 
-add_executable (mgm main_mgm.cc mgm_multiscale.cc img.cc point.cc mgm_costvolume.cc mgm_core.cc census_tools.cc shear.c stereo_utils.cc stereo_utils.h)
+# INCLUDES AND COMPILATION ##
+# Specify build include directories
+include_directories(
+  include/mgm
+  include
+  src/impl
+)
+
+
+
+add_library(mgm
+  src/impl/img.cc
+  src/impl/point.cc
+  src/impl/mgm_costvolume.cc
+  src/impl/mgm_core.cc
+  src/impl/census_tools.cc
+  src/impl/shear.c
+  src/impl/stereo_utils.cc
+  src/impl/mgm_multiscale.cc
+  src/impl/smartparameter.cc
+)
 target_link_libraries(mgm ${LIBS})
 
+add_library(iio extern/iio/iio.c)
+target_link_libraries(iio IIOLIB)
+
+add_executable(run_mgm_multi src/main_mgm_multi.cc)
+target_link_libraries(run_mgm_multi ${LIBS} mgm)
+
+add_executable(run_mgm src/main_mgm.cc)
+target_link_libraries(run_mgm ${LIBS} mgm)
