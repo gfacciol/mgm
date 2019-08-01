@@ -26,7 +26,7 @@ using namespace std;
 
 #define __max(a,b)  (((a) > (b)) ? (a) : (b))
 #define __min(a,b)  (((a) < (b)) ? (a) : (b))
-// fast alternatives to: __min(a,__min(b,c)) 
+// fast alternatives to: __min(a,__min(b,c))
 // fastestest ?
 #define fmin3_(x, y, z) \
    (((x) < (y)) ? (((z) < (x)) ? (z) : (x)) : (((z) < (y)) ? (z) : (y)))
@@ -40,7 +40,7 @@ static inline float fmin3(float a, float b, float c)
 }
 
 
-// intervening points p,q,r 
+// intervening points p,q,r
 // faster variant for the case 2
 // THIS IS THE SIMPLEST MGM WEIGHT UPDATE FUNCTION
 inline void update_cost2(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, const float P1, const float P2) {
@@ -70,7 +70,7 @@ inline void update_cost2(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, const float P1
 }
 
 
-// intervening points p,q,r 
+// intervening points p,q,r
 // THIS FUNCTION CONSIDERS 4 NEIGHBORS AND WEIGHTED EDGES
 inline void update_costW(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, Dvec &Ls, Dvec &Lt, const float P1, const float P2,
       const float DeltaI1, const float DeltaI2, const float DeltaI3, const float DeltaI4, const int howmany) {
@@ -89,7 +89,7 @@ inline void update_costW(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, Dvec &Ls, Dvec
                float C    = CCp[o];  // the matching cost for p <-> p+d
                //float C    = computeC( p,p+Point(o,0), u,v);  // the matching cost for p <-> p+d // SLOWER
                float edge_potentials = 0;
-               
+
                float vL0  = Lq[o];	// the neighbor has the same label
                float vLP1 = __min( Lq[o-1],  Lq[o+1]) + P1*DeltaI1;		// the neighbour has a similar (+-1) label
                float vLP2 = minL_all + P2*DeltaI1;  // the minimum label of the neighbour
@@ -131,14 +131,14 @@ inline void update_costW(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, Dvec &Ls, Dvec
 // minMall may be a value lower than the values stored in M[]
 static void minConvTruncatedLinear(float M[], const int mm, const float minMall, const float P1, const float P2) {
    // forward pass
-   for(int o=1; o<mm; o++) 
+   for(int o=1; o<mm; o++)
       M[o] = __min(M[o-1] + P1, M[o]);
    // backward pass
-   for(int o=mm-2; o>=0; o--)  
+   for(int o=mm-2; o>=0; o--)
       M[o] = __min(M[o+1] + P1, M[o]);
    // truncated distance
    if (P2 < INFINITY)
-      for(int o=0; o<mm; o++) 
+      for(int o=0; o<mm; o++)
          M[o] = __min(M[o], minMall + P2);
 }
 
@@ -168,7 +168,7 @@ static void FixBounrady_for_minConvTruncatedLinear(const float I[], const int im
 
 
 
-// intervening points p,q,r 
+// intervening points p,q,r
 // faster variant for the case 2
 // Adaptation of the Felzenszwalb-Huttenlocher message passing for the truncated linear model
 // see: "Efficient Belief Propagation for Early Vision"
@@ -206,7 +206,7 @@ inline void update_cost2_trunclinear(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, co
 // P1 and P2 ARE USED WITH A DIFFERENT MEANING
 // HERE THE COST IS:   V(p,q) = min(P2,  P1*|p-q|)
 // THIS FUNCTION CONSIDERS 4 NEIGHBORS AND WEIGHTED EDGES
-inline void update_costW_trunclinear(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, Dvec &Ls, Dvec &Lt, const float P1, const float P2, 
+inline void update_costW_trunclinear(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, Dvec &Ls, Dvec &Lt, const float P1, const float P2,
       const float DeltaI1, const float DeltaI2, const float DeltaI3, const float DeltaI4, const int howmany) {
 
             float min1L_all = INFINITY;
@@ -274,41 +274,41 @@ inline void update_cost2Lmin(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, float P1, 
    //
    // When combined in 2D these functions lead to the following cases (with P1<P2)
    // produces an odd shape shape in 2D
-   //                             |           
-   //                             |          
-   //                            (2)P2     P2+P1    ...      P2+P2   
+   //                             |
+   //                             |
+   //                            (2)P2     P2+P1    ...      P2+P2
    //                             |           |
    //                             |           |               .
-   //                             |           |               . 
+   //                             |           |               .
    //                             |           |
    //                P1+P1 ---   (1)P1 ---  P1+P1   ...      P1+P2
    //                  |          |           |               |
    //                  |          |           |               |
    //               (-1)P1 ===   (0)   ===  (1)P1 ======... (2)P2 .......
-   //                  |          |           |       
-   //                  |          |           |       
+   //                  |          |           |
+   //                  |          |           |
    //                P1+P1 ---    P1   ---  P1+P1  -----
    //                             |
    //                             |
-   //  
+   //
    //  We would like to try something more isotropic like
-   //                             |           
-   //                             |          
-   //                            (2)P2     P2+P1    ...      P2+P2   
+   //                             |
+   //                             |
+   //                            (2)P2     P2+P1    ...      P2+P2
    //                             |           |
    //                             |           |               .
-   //                             |           |               . 
+   //                             |           |               .
    //                             |           |
    //                P1+P1 ---  (1).3P1 ---  P1+P1   ...      P1+P2
    //                  |          |           |               |
    //                  |          |           |               |
    //               (-1).3P1 === (0)   ===  (1).3P1======... (2)P2 .......
-   //                  |          |           |       
-   //                  |          |           |       
+   //                  |          |           |
+   //                  |          |           |
    //                P1+P1 ---   .3P1   ---  P1+P1  -----
    //                             |
    //                             |
-   //  
+   //
    //  But the net effect is rather inperceptible
 
             float min1L_all = Lq.get_minvalue();
@@ -318,9 +318,9 @@ inline void update_cost2Lmin(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, float P1, 
             for(int o=Lp.min;o<=Lp.max;o++) {
                float C    = CCp[o];  // the matching cost for p <-> p+d
                //float C    = computeC( p,p+Point(o,0), u,v);  // the matching cost for p <-> p+d // SLOWER
-               
+
                float edge_potentials = 0;
-               
+
                float vL0  = Lq[o];	// the neighbor has the same label
                float vLP1 = __min( Lq[o-1],  Lq[o+1]) + P1;		// the neighbour has a similar (+-1) label
                float vLP2 = min1L_all + P2;  // the minimum label of the neighbour
@@ -329,18 +329,18 @@ inline void update_cost2Lmin(Dvec &Lp, Dvec &CCp, Dvec &Lq, Dvec &Lr, float P1, 
                float v2LP1 = __min( Lr[o-1],  Lr[o+1]) + P1;		// the neighbour has a similar (+-1) label
                float v2LP2 = min2L_all + P2;  // the minimum label of the neighbour
 
-               edge_potentials = fmin3( 
-                  fmin3( 
+               edge_potentials = fmin3(
+                  fmin3(
                   vL0  + v2LP1   -0.7*P1 ,    // +-1,0
                   vLP1 + v2L0    -0.7*P1  ,    // 0,+-1
                   vLP1 + v2LP1  //-2*P1+2*sqrt(2.0)*P1      // +-1,+-1
                   ),
-                  fmin3( 
+                  fmin3(
                   vL0  + v2L0    ,   // 0,0
                   vLP1 + v2LP2   ,//-P1 +P2 ,    // +-1,others
                   vLP2 + v2LP1   //-P1 +P2       // others,+-1
                   ),
-                  fmin3( 
+                  fmin3(
                   vLP2 + v2LP2      ,    // others,others
                   vL0  + v2LP2  , //+P2  ,   // others,0
                   vLP2 + v2L0   //+P2      // 0,others
@@ -383,11 +383,11 @@ struct Pass_setup {
 
 // mgm returns the "aggregated" cost volume, out, and outcost without any other refinement
 // This is the diagonally parallel implementation of MGM. Compared to the naive
-// version, this one uses less memory and scales better with the number of cores. 
-// However, I've observed that it may also be more cache intensive. 
-struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w, 
-                        const struct Img &dminI, const struct Img &dmaxI, 
-                        struct Img *out, struct Img *outcost, 
+// version, this one uses less memory and scales better with the number of cores.
+// However, I've observed that it may also be more cache intensive.
+struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
+                        const struct Img &dminI, const struct Img &dmaxI,
+                        struct Img *out, struct Img *outcost,
                         const float P1, const float P2, const int NDIR, const int MGM, struct mgm_param *param,
                         const int USE_FELZENSZWALB_POTENTIALS, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
                         int SGM_FIX_OVERCOUNT)                 // fix the overcounting in SGM following (Drory etal. 2014)
@@ -398,7 +398,7 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
 
    // check the content of in_w is it all 1?
    int USE_IMAGE_DEPENDENT_WEIGHTS=0;
-   for (int i=0; i<in_w.ncol*in_w.nrow*in_w.nch; i++) 
+   for (int i=0; i<in_w.ncol*in_w.nrow*in_w.nch; i++)
       if (in_w[i] != 1.0) USE_IMAGE_DEPENDENT_WEIGHTS = 1;
    if (USE_IMAGE_DEPENDENT_WEIGHTS) printf(" USING IMAGE DEPENDENT WEIGHTS\n");
 
@@ -411,50 +411,50 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
    // O: first pixel in the scan
    // c: current pixel in the scan
    // - or |: processed pixels (according to the scan order)
-   // 1,2,3,4: considered neighbours in the corresponding order 
+   // 1,2,3,4: considered neighbours in the corresponding order
    //
    //      (I)              (II)           (III)             (IV)
    //
-   // O-----------                      O | | | |         | | | | | O 
-   // ------------           c--1--     | | | | 4         1 3 | | | | 
-   // ------------     ---4--2--3--     | | | | |         | | | | | | 
-   // ------------     ------------     | | | | 2 o       o 2 | | | | 
-   // -3--2--4----     ------------     | | | | | |         | | | | | 
-   // -1--c            ------------     | | | | 3 1         4 | | | | 
-   //                  -----------O     | | | | | |         | | | | | 
-   // 
+   // O-----------                      O | | | |         | | | | | O
+   // ------------           c--1--     | | | | 4         1 3 | | | |
+   // ------------     ---4--2--3--     | | | | |         | | | | | |
+   // ------------     ------------     | | | | 2 o       o 2 | | | |
+   // -3--2--4----     ------------     | | | | | |         | | | | |
+   // -1--c            ------------     | | | | 3 1         4 | | | |
+   //                  -----------O     | | | | | |         | | | | |
+   //
    //
    //                         NEIGHBORS
    //
-   //            (-1,-1)       (0,-1)        (1,-1) 
+   //            (-1,-1)       (0,-1)        (1,-1)
    //                            |
    //                            |
    //            (-1,0)   ---    o    ---    (1,0)
-   //                            | 
    //                            |
-   //            (-1,1)        (0,1)         (1,1) 
+   //                            |
+   //            (-1,1)        (0,1)         (1,1)
    //
    // with MGM == 1  only the neighbor #1 is considered
    // with MGM == 2  #1 and #2 are considered
    // with MGM == 4  #1 to #4 are considered
-   
-   
+
+
    // horizontal and vertical
    direct.push_back( Pass_setup(Point(-1,0)  , Point(0,-1)  , Point(-1,-1) , Point(1,-1)  ,1,1,1) ); // (I)
    direct.push_back( Pass_setup(Point(1,0)   , Point(0,1)   , Point(1,1)   , Point(-1,1)  ,0,0,1) ); // (II)
    direct.push_back( Pass_setup(Point(0,1)   , Point(-1,0)  , Point(-1,1)  , Point(-1,-1) ,1,0,0) ); // (III)
    direct.push_back( Pass_setup(Point(0,-1)  , Point(1,0)   , Point(1,-1)  , Point(1,1)   ,0,1,0) ); // (IV)
-   // diagonals 45º                                          
+   // diagonals 45º
    direct.push_back( Pass_setup(Point(-1,-1) , Point(1,-1)  , Point(0,-1)  , Point(1,0)   ,0,1,1) );
    direct.push_back( Pass_setup(Point(1,-1)  , Point(1,1)   , Point(1,0)   , Point(0,1)   ,0,0,0) );
    direct.push_back( Pass_setup(Point(1,1)   , Point(-1,1)  , Point(0,1)   , Point(-1,0)  ,1,0,1) );
    direct.push_back( Pass_setup(Point(-1,1)  , Point(-1,-1) , Point(-1,0)  , Point(0,-1)  ,1,1,0) );
    // 22.5º
-   // ...  
+   // ...
 
    // translate pass directions to edges encoded in channels of the image w
    // THIS IS TIED TO THE INFORMATION IN THE VECTOR direct
-   // THE SAME VECTORS COULD BE OBTAINED PROGRAMATICALLY FROM direct 
+   // THE SAME VECTORS COULD BE OBTAINED PROGRAMATICALLY FROM direct
    //   str::vector < std::pair<Point, int> > dir_to_idx;
    //   for(int i=0;i<7;i++)
    //      dir_to_idx.push_back( std::pair<Point, int> (direct[i].dir1 ,i ));
@@ -473,13 +473,13 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
 
       // reset the values of Lr for this passage
       #pragma omp parallel for
-      for(int pidx=0; pidx<nx*ny; pidx++) 
-         for(int o=Lr[pidx].min;o<=Lr[pidx].max;o++) 
+      for(int pidx=0; pidx<nx*ny; pidx++)
+         for(int o=Lr[pidx].min;o<=Lr[pidx].max;o++)
             Lr[pidx].set_nolock(o, CC[pidx][o] ); // no omp critic is inside set_nolock
 
       int maxii = nx, maxjj = ny;
       if( !dir.row_major ) { maxii = ny; maxjj = nx; }
-      
+
 
       // scan in the horizontal direction left to right
       for(int ii=0; ii<maxii+2*maxjj; ii++) {
@@ -491,7 +491,7 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
          if(x < 0 || x >= maxii) continue;
 
          int maxnx = maxii, maxny = maxjj;
-         // swap the indices if we are in column major 
+         // swap the indices if we are in column major
          #define SWAPi(a,b) {int swap=a;a=b;b=swap;}
          if (!dir.row_major) {
             SWAPi(x, y);
@@ -544,14 +544,14 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
             if(USE_FELZENSZWALB_POTENTIALS>0) {
                if(MGM==2)
                   update_cost2_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], P1, P2);
-               else 
-                  update_costW_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2, 
+               else
+                  update_costW_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2,
                         1.0, 1.0, 1.0, 1.0, MGM);
             }
-            else if(MGM==2) 
+            else if(MGM==2)
                update_cost2(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], P1, P2);
             else
-               update_costW(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2, 
+               update_costW(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2,
                      1.0, 1.0, 1.0, 1.0, MGM);
          }
          Lr[pidx].get_minvalue();    // precompute min value in the current list
@@ -568,13 +568,13 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
    }
 
 
-   // WTA 
+   // WTA
    #pragma omp parallel for
    for(int i=0;i<nx*ny;i++) {
       float minP;
       float minL=INFINITY;
       for(int o=S[i].min;o<=S[i].max;o++) {
-         // overcounting correction (Drory etal. 2014) 
+         // overcounting correction (Drory etal. 2014)
          if (SGM_FIX_OVERCOUNT==1)
             S[i].set_nolock(o, S[i][o] - (NDIR -1) * CC[i][o]);
 
@@ -583,7 +583,7 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
             minL = S[i][o];
             minP = o;
          }
-      }	  
+      }
       (*out)[i] = minP;
       (*outcost)[i] = minL;
    }
@@ -607,11 +607,11 @@ struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
 #ifdef USE_OLD_NAIVE_MGM
 
 // mgm returns the "aggregated" cost volume, out, and outcost without any other refinement
-// This is the naive parallel implementation of MGM, all traversals (up to 8) are computed 
+// This is the naive parallel implementation of MGM, all traversals (up to 8) are computed
 // in parallel. Thus lots of memory is required.
-struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct Img &in_w, 
-                        const struct Img &dminI, const struct Img &dmaxI, 
-                        struct Img *out, struct Img *outcost, 
+struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct Img &in_w,
+                        const struct Img &dminI, const struct Img &dmaxI,
+                        struct Img *out, struct Img *outcost,
                         const float P1, const float P2, const int NDIR, const int MGM, struct mgm_param *param,
                         const int USE_FELZENSZWALB_POTENTIALS, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
                         int SGM_FIX_OVERCOUNT)                 // fix the overcounting in SGM following (Drory etal. 2014)
@@ -622,7 +622,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
 
    // check the content of in_w is it all 1?
    int USE_IMAGE_DEPENDENT_WEIGHTS=0;
-   for (int i=0; i<in_w.ncol*in_w.nrow*in_w.nch; i++) 
+   for (int i=0; i<in_w.ncol*in_w.nrow*in_w.nch; i++)
       if (in_w[i] != 1.0) USE_IMAGE_DEPENDENT_WEIGHTS = 1;
    if (USE_IMAGE_DEPENDENT_WEIGHTS) printf(" USING IMAGE DEPENDENT WEIGHTS\n");
 
@@ -635,50 +635,50 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
    // O: first pixel in the scan
    // c: current pixel in the scan
    // - or |: processed pixels (according to the scan order)
-   // 1,2,3,4: considered neighbours in the corresponding order 
+   // 1,2,3,4: considered neighbours in the corresponding order
    //
    //      (I)              (II)           (III)             (IV)
    //
-   // O-----------                      O | | | |         | | | | | O 
-   // ------------           c--1--     | | | | 4         1 3 | | | | 
-   // ------------     ---4--2--3--     | | | | |         | | | | | | 
-   // ------------     ------------     | | | | 2 o       o 2 | | | | 
-   // -3--2--4----     ------------     | | | | | |         | | | | | 
-   // -1--c            ------------     | | | | 3 1         4 | | | | 
-   //                  -----------O     | | | | | |         | | | | | 
-   // 
+   // O-----------                      O | | | |         | | | | | O
+   // ------------           c--1--     | | | | 4         1 3 | | | |
+   // ------------     ---4--2--3--     | | | | |         | | | | | |
+   // ------------     ------------     | | | | 2 o       o 2 | | | |
+   // -3--2--4----     ------------     | | | | | |         | | | | |
+   // -1--c            ------------     | | | | 3 1         4 | | | |
+   //                  -----------O     | | | | | |         | | | | |
+   //
    //
    //                         NEIGHBORS
    //
-   //            (-1,-1)       (0,-1)        (1,-1) 
+   //            (-1,-1)       (0,-1)        (1,-1)
    //                            |
    //                            |
    //            (-1,0)   ---    o    ---    (1,0)
-   //                            | 
    //                            |
-   //            (-1,1)        (0,1)         (1,1) 
+   //                            |
+   //            (-1,1)        (0,1)         (1,1)
    //
    // with MGM == 1  only the neighbor #1 is considered
    // with MGM == 2  #1 and #2 are considered
    // with MGM == 4  #1 to #4 are considered
-   
-   
+
+
    // horizontal and vertical
    direct.push_back( Pass_setup(Point(-1,0)  , Point(0,-1)  , Point(-1,-1) , Point(1,-1)  ,1,1,1) ); // (I)
    direct.push_back( Pass_setup(Point(1,0)   , Point(0,1)   , Point(1,1)   , Point(-1,1)  ,0,0,1) ); // (II)
    direct.push_back( Pass_setup(Point(0,1)   , Point(-1,0)  , Point(-1,1)  , Point(-1,-1) ,1,0,0) ); // (III)
    direct.push_back( Pass_setup(Point(0,-1)  , Point(1,0)   , Point(1,-1)  , Point(1,1)   ,0,1,0) ); // (IV)
-   // diagonals 45º                                          
+   // diagonals 45º
    direct.push_back( Pass_setup(Point(-1,-1) , Point(1,-1)  , Point(0,-1)  , Point(1,0)   ,0,1,1) );
    direct.push_back( Pass_setup(Point(1,-1)  , Point(1,1)   , Point(1,0)   , Point(0,1)   ,0,0,0) );
    direct.push_back( Pass_setup(Point(1,1)   , Point(-1,1)  , Point(0,1)   , Point(-1,0)  ,1,0,1) );
    direct.push_back( Pass_setup(Point(-1,1)  , Point(-1,-1) , Point(-1,0)  , Point(0,-1)  ,1,1,0) );
    // 22.5º
-   // ...  
+   // ...
 
    // translate pass directions to edges encoded in channels of the image w
    // THIS IS TIED TO THE INFORMATION IN THE VECTOR direct
-   // THE SAME VECTORS COULD BE OBTAINED PROGRAMATICALLY FROM direct 
+   // THE SAME VECTORS COULD BE OBTAINED PROGRAMATICALLY FROM direct
    //   str::vector < std::pair<Point, int> > dir_to_idx;
    //   for(int i=0;i<7;i++)
    //      dir_to_idx.push_back( std::pair<Point, int> (direct[i].dir1 ,i ));
@@ -698,7 +698,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
 
       int maxii = nx, maxjj = ny;
       if( !dir.row_major ) { maxii = ny; maxjj = nx; }
-      
+
 
       // scan in the horizontal direction left to right
       for(int jj=0; jj<maxjj; jj++) {
@@ -707,7 +707,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
          int x=ii, y=jj;
 
          int maxnx = maxii, maxny = maxjj;
-         // swap the indices if we are in column major 
+         // swap the indices if we are in column major
          #define SWAPi(a,b) {int swap=a;a=b;b=swap;}
          if (!dir.row_major) {
             SWAPi(x, y);
@@ -740,7 +740,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
          if(TSGM_2LMIN>0) { // THIS IS A LEGACY FEATURE (DISABLED)
             //   update_cost2L2(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], P1, P2);
             update_cost2Lmin(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], P1, P2);
-         } 
+         }
          else if(USE_IMAGE_DEPENDENT_WEIGHTS) {      // IMAGE DEPENDENT WEIGHTS
 
             #define val(u, p, ch)  u.data[(p.x) + (u.nx)*(p.y) + (ch)*(u.npix)]
@@ -749,8 +749,8 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
             float DeltaI3 = val(in_w, p, pass_to_channel_3[pass]);
             float DeltaI4 = val(in_w, p, pass_to_channel_4[pass]);
             #undef val
-            if(USE_FELZENSZWALB_POTENTIALS>0) 
-               update_costW_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2, 
+            if(USE_FELZENSZWALB_POTENTIALS>0)
+               update_costW_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2,
                      DeltaI1, DeltaI2, DeltaI3, DeltaI4, MGM);
             else
                update_costW(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2,
@@ -760,14 +760,14 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
             if(USE_FELZENSZWALB_POTENTIALS>0) {
                if(MGM==2)
                   update_cost2_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], P1, P2);
-               else 
-                  update_costW_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2, 
+               else
+                  update_costW_trunclinear(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2,
                         1.0, 1.0, 1.0, 1.0, MGM);
             }
-            else if(MGM==2) 
+            else if(MGM==2)
                update_cost2(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], P1, P2);
             else
-               update_costW(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2, 
+               update_costW(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2,
                      1.0, 1.0, 1.0, 1.0, MGM);
          }
          Lr[pidx].get_minvalue();    // precompute min value in the current list
@@ -786,13 +786,13 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
    }
 
 
-   // WTA 
+   // WTA
    #pragma omp parallel for
    for(int i=0;i<nx*ny;i++) {
       float minP;
       float minL=INFINITY;
       for(int o=S[i].min;o<=S[i].max;o++) {
-         // overcounting correction (Drory etal. 2014) 
+         // overcounting correction (Drory etal. 2014)
          if (SGM_FIX_OVERCOUNT==1)
             S[i].set_nolock(o, S[i][o] - (NDIR -1) * CC[i][o]);
 
@@ -801,7 +801,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
             minL = S[i][o];
             minP = o;
          }
-      }	  
+      }
       (*out)[i] = minP;
       (*outcost)[i] = minL;
    }
@@ -824,11 +824,11 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
 #else  // USE_OLD_NAIVE_MGM
 
 // mgm returns the "aggregated" cost volume, out, and outcost without any other refinement
-// This is the NEW naive parallel implementation of MGM, all traversals (up to 8) are computed 
+// This is the NEW naive parallel implementation of MGM, all traversals (up to 8) are computed
 // in parallel. But the volumes Lr are stored in line buffers, so the memory overhead is minimal.
-struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct Img &in_w, 
-                        const struct Img &dminI, const struct Img &dmaxI, 
-                        struct Img *out, struct Img *outcost, 
+struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct Img &in_w,
+                        const struct Img &dminI, const struct Img &dmaxI,
+                        struct Img *out, struct Img *outcost,
                         const float P1, const float P2, const int NDIR, const int MGM, struct mgm_param *param,
                         const int USE_FELZENSZWALB_POTENTIALS, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
                         int SGM_FIX_OVERCOUNT)                 // fix the overcounting in SGM following (Drory etal. 2014)
@@ -839,7 +839,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
 
    // check the content of in_w is it all 1?
    int USE_IMAGE_DEPENDENT_WEIGHTS=0;
-   for (int i=0; i<in_w.ncol*in_w.nrow*in_w.nch; i++) 
+   for (int i=0; i<in_w.ncol*in_w.nrow*in_w.nch; i++)
       if (in_w[i] != 1.0) USE_IMAGE_DEPENDENT_WEIGHTS = 1;
    if (USE_IMAGE_DEPENDENT_WEIGHTS) printf(" USING IMAGE DEPENDENT WEIGHTS\n");
 
@@ -852,50 +852,50 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
    // O: first pixel in the scan
    // c: current pixel in the scan
    // - or |: processed pixels (according to the scan order)
-   // 1,2,3,4: considered neighbours in the corresponding order 
+   // 1,2,3,4: considered neighbours in the corresponding order
    //
    //      (I)              (II)           (III)             (IV)
    //
-   // O-----------                      O | | | |         | | | | | O 
-   // ------------           c--1--     | | | | 4         1 3 | | | | 
-   // ------------     ---4--2--3--     | | | | |         | | | | | | 
-   // ------------     ------------     | | | | 2 o       o 2 | | | | 
-   // -3--2--4----     ------------     | | | | | |         | | | | | 
-   // -1--c            ------------     | | | | 3 1         4 | | | | 
-   //                  -----------O     | | | | | |         | | | | | 
-   // 
+   // O-----------                      O | | | |         | | | | | O
+   // ------------           c--1--     | | | | 4         1 3 | | | |
+   // ------------     ---4--2--3--     | | | | |         | | | | | |
+   // ------------     ------------     | | | | 2 o       o 2 | | | |
+   // -3--2--4----     ------------     | | | | | |         | | | | |
+   // -1--c            ------------     | | | | 3 1         4 | | | |
+   //                  -----------O     | | | | | |         | | | | |
+   //
    //
    //                         NEIGHBORS
    //
-   //            (-1,-1)       (0,-1)        (1,-1) 
+   //            (-1,-1)       (0,-1)        (1,-1)
    //                            |
    //                            |
    //            (-1,0)   ---    o    ---    (1,0)
-   //                            | 
    //                            |
-   //            (-1,1)        (0,1)         (1,1) 
+   //                            |
+   //            (-1,1)        (0,1)         (1,1)
    //
    // with MGM == 1  only the neighbor #1 is considered
    // with MGM == 2  #1 and #2 are considered
    // with MGM == 4  #1 to #4 are considered
-   
-   
+
+
    // horizontal and vertical
    direct.push_back( Pass_setup(Point(-1,0)  , Point(0,-1)  , Point(-1,-1) , Point(1,-1)  ,1,1,1) ); // (I)
    direct.push_back( Pass_setup(Point(1,0)   , Point(0,1)   , Point(1,1)   , Point(-1,1)  ,0,0,1) ); // (II)
    direct.push_back( Pass_setup(Point(0,1)   , Point(-1,0)  , Point(-1,1)  , Point(-1,-1) ,1,0,0) ); // (III)
    direct.push_back( Pass_setup(Point(0,-1)  , Point(1,0)   , Point(1,-1)  , Point(1,1)   ,0,1,0) ); // (IV)
-   // diagonals 45º                                          
+   // diagonals 45º
    direct.push_back( Pass_setup(Point(-1,-1) , Point(1,-1)  , Point(0,-1)  , Point(1,0)   ,0,1,1) );
    direct.push_back( Pass_setup(Point(1,-1)  , Point(1,1)   , Point(1,0)   , Point(0,1)   ,0,0,0) );
    direct.push_back( Pass_setup(Point(1,1)   , Point(-1,1)  , Point(0,1)   , Point(-1,0)  ,1,0,1) );
    direct.push_back( Pass_setup(Point(-1,1)  , Point(-1,-1) , Point(-1,0)  , Point(0,-1)  ,1,1,0) );
    // 22.5º
-   // ...  
+   // ...
 
    // translate pass directions to edges encoded in channels of the image w
    // THIS IS TIED TO THE INFORMATION IN THE VECTOR direct
-   // THE SAME VECTORS COULD BE OBTAINED PROGRAMATICALLY FROM direct 
+   // THE SAME VECTORS COULD BE OBTAINED PROGRAMATICALLY FROM direct
    //   str::vector < std::pair<Point, int> > dir_to_idx;
    //   for(int i=0;i<7;i++)
    //      dir_to_idx.push_back( std::pair<Point, int> (direct[i].dir1 ,i ));
@@ -918,7 +918,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
 
       int maxii = nx, maxjj = ny;
       if( !dir.row_major ) { maxii = ny; maxjj = nx; }
-      
+
 
       // scan in the horizontal direction left to right
       for(int jj=0; jj<maxjj; jj++) {
@@ -930,7 +930,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
          int x=ii, y=jj;
 
          int maxnx = maxii, maxny = maxjj;
-         // swap the indices if we are in column major 
+         // swap the indices if we are in column major
          #define SWAPi(a,b) {int swap=a;a=b;b=swap;}
          if (!dir.row_major) {
             SWAPi(x, y);
@@ -957,7 +957,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
          if (check_inside_image(pr ,dminI)  &&
              check_inside_image(pr2,dminI)  &&
              check_inside_image(pr3,dminI)  &&
-             check_inside_image(pr4,dminI) ) 
+             check_inside_image(pr4,dminI) )
          {
 
          // base index of the neighbor
@@ -967,9 +967,9 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
          int pr3idx = (pr3.x+pr3.y*nx);
          int pr4idx = (pr4.x+pr4.y*nx);
 
-         Dvec & Lr_pidx   = Lr.get(pidx), 
-              & Lr_pridx  = Lr.get(pridx), 
-              & Lr_pr2idx = Lr.get(pr2idx), 
+         Dvec & Lr_pidx   = Lr.get(pidx),
+              & Lr_pridx  = Lr.get(pridx),
+              & Lr_pr2idx = Lr.get(pr2idx),
               & Lr_pr3idx = Lr.get(pr3idx),
               & Lr_pr4idx = Lr.get(pr4idx);
 
@@ -977,7 +977,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
          if(TSGM_2LMIN>0) { // THIS IS A LEGACY FEATURE (DISABLED)
             //   update_cost2L2(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, P1, P2);
             update_cost2Lmin(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, P1, P2);
-         } 
+         }
          else if(USE_IMAGE_DEPENDENT_WEIGHTS) {      // IMAGE DEPENDENT WEIGHTS
 
             #define val(u, p, ch)  u.data[(p.x) + (u.nx)*(p.y) + (ch)*(u.npix)]
@@ -986,8 +986,8 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
             float DeltaI3 = val(in_w, p, pass_to_channel_3[pass]);
             float DeltaI4 = val(in_w, p, pass_to_channel_4[pass]);
             #undef val
-            if(USE_FELZENSZWALB_POTENTIALS>0) 
-               update_costW_trunclinear(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2, 
+            if(USE_FELZENSZWALB_POTENTIALS>0)
+               update_costW_trunclinear(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2,
                      DeltaI1, DeltaI2, DeltaI3, DeltaI4, MGM);
             else
                update_costW(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2,
@@ -997,18 +997,18 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
             if(USE_FELZENSZWALB_POTENTIALS>0) {
                if(MGM==2)
                   update_cost2_trunclinear(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, P1, P2);
-               else 
-                  update_costW_trunclinear(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2, 
+               else
+                  update_costW_trunclinear(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2,
                         1.0, 1.0, 1.0, 1.0, MGM);
             }
-            else if(MGM==2) 
+            else if(MGM==2)
                update_cost2(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, P1, P2);
             else
-               update_costW(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2, 
+               update_costW(Lr_pidx, CC[pidx], Lr_pridx, Lr_pr2idx, Lr_pr3idx, Lr_pr4idx, P1, P2,
                      1.0, 1.0, 1.0, 1.0, MGM);
          }
          } // end  if
-         
+
 
          // ACCUMULATE LINE Lr in S and update minvalue in the Dvec
          Dvec & Lr_pidx   = Lr.get(pidx);
@@ -1030,14 +1030,14 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
    }
 
 
-   // WTA 
+   // WTA
    Img tmp(nx,ny);
    #pragma omp parallel for
    for(int i=0;i<nx*ny;i++) {
       float minP;
       float minL=INFINITY;
       for(int o=S[i].min;o<=S[i].max;o++) {
-         // overcounting correction (Drory etal. 2014) 
+         // overcounting correction (Drory etal. 2014)
          if (SGM_FIX_OVERCOUNT==1)
             S[i].set_nolock(o, S[i][o] - (NDIR -1) * CC[i][o]);
 
@@ -1046,13 +1046,13 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
             minL = S[i][o];
             minP = o;
          }
-      }	  
+      }
       (*out)[i] = minP;
       (*outcost)[i] = minL;
 
-      // export confidence 
+      // export confidence
       int confi = 0;
-      for (int p = 0; p < NDIR; p++) 
+      for (int p = 0; p < NDIR; p++)
          if (disparity_consensus[i*NDIR+p] == minP) confi++;
       tmp[i] = confi;
    }
@@ -1062,8 +1062,8 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
 
 
    {
-   Img tmp(nx,ny); 
-   for (int i=0; i<nx*ny; i++) tmp[i] = -(*outcost)[i]; 
+   Img tmp(nx,ny);
+   for (int i=0; i<nx*ny; i++) tmp[i] = -(*outcost)[i];
    if (param->var_dict["right"] == 1) param->img_dict["confidence_costR"] = tmp;
    else                               param->img_dict["confidence_costL"] = tmp;
    }

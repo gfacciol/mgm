@@ -18,7 +18,7 @@ extern "C" {
 #include "shear.h"
 }
 
-/* shift in1 horizontally by q pixels 
+/* shift in1 horizontally by q pixels
  *  *  * (could a noninteger factor) save the translated image in out */
 struct Img shift(const struct Img &in1, float q)
 {
@@ -60,7 +60,7 @@ std::vector< struct Img > alloc_prefiltered_fourier_subpix_interp(const struct I
 }
 
 
-struct costvolume_t allocate_costvolume (struct Img min, struct Img max) 
+struct costvolume_t allocate_costvolume (struct Img min, struct Img max)
 {
    struct costvolume_t cv;
    cv.vectors = std::vector< Dvec >(min.npix);
@@ -71,8 +71,8 @@ struct costvolume_t allocate_costvolume (struct Img min, struct Img max)
    return cv;
 }
 
-struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // source (reference) image                      
-                                                      struct Img &in_v, // destination (match) image                  
+struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // source (reference) image
+                                                      struct Img &in_v, // destination (match) image
                                                       struct Img &dminI,// per pixel max&min disparity
                                                       struct Img &dmaxI,
                                                       char* prefilter,        // none, sobel, census(WxW)
@@ -81,7 +81,7 @@ struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // sourc
                                                       float ZOOMFACTOR)   // subpixel factor (dmin & dmax are stretched)
 {
 
-   int nx = in_u.nx; 
+   int nx = in_u.nx;
    int ny = in_u.ny;
    int nch= in_u.nch;
 
@@ -130,24 +130,24 @@ struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // sourc
          vs[i] = gblur_truncated(vs[i], 1.0);
    }
 
-   // 3. allocate the cost volume 
+   // 3. allocate the cost volume
    struct costvolume_t CC = allocate_costvolume(dminI, dmaxI);
 
-   // 4. apply it 
+   // 4. apply it
    #pragma omp parallel for
    for(int jj=0; jj<ny; jj++) for(int ii=0; ii<nx; ii++)
    {
       int pidx  = (ii + jj*nx);
       int allinvalid = 1;
 
-      for(int o=CC[pidx].min;o<=CC[pidx].max;o++) 
+      for(int o=CC[pidx].min;o<=CC[pidx].max;o++)
       {
          Point p(ii,jj);      // current point on left image
          //Point q = p + Point(o,0); // other point on right image
          //Point q = p + Point(o/ZOOMFACTOR,0); // other point on right image
          Point q = p + Point(floor(o/ZOOMFACTOR),0);
          int zpl = goodmod(o,int(ZOOMFACTOR));
-         // 4.1 compute the cost 
+         // 4.1 compute the cost
          float e = truncDist * u.nch;
          if (check_inside_image(q, vs[0])) {
             //e = cost(p, q, u, v);
@@ -159,12 +159,12 @@ struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // sourc
          CC[pidx].set_nolock(o, e); // pragma omp critic is inside set
          if(std::isfinite(e)) allinvalid=0;
       }
-      // SAFETY MEASURE: If there are no valid hypotheses for this pixel 
+      // SAFETY MEASURE: If there are no valid hypotheses for this pixel
       // (ie all hypotheses fall outside the target image or are invalid in some way)
       // then the cost must be set to 0, for all the available hypotheses
-      // Leaving inf would be propagated and invalidate the entire solution 
+      // Leaving inf would be propagated and invalidate the entire solution
       if (allinvalid) {
-         for(int o=CC[pidx].min;o<=CC[pidx].max;o++) 
+         for(int o=CC[pidx].min;o<=CC[pidx].max;o++)
          {
             CC[pidx].set_nolock(o, 0); // pragma omp critic is inside set
          }
@@ -234,7 +234,7 @@ void dump_costvolume(struct costvolume_t CC, int nx, int ny, int dmin, int dmax,
 }
 
 
-// reads the costvolume from a file with format: 
+// reads the costvolume from a file with format:
 // nx(int x1), ny(int x1), ndisp(int x1), minimum_disp(int x1), costs(float x nx*ny*ndisp)
 void read_costvolume(char* cvfilename, struct costvolume_t &CC, int nx, int ny, struct Img &zdmin, struct Img &zdmax) {
    FILE* fid = fopen(cvfilename, "rb");
@@ -245,7 +245,7 @@ void read_costvolume(char* cvfilename, struct costvolume_t &CC, int nx, int ny, 
 	   fprintf(stderr, "Bad costvolume header on file \"%s\"\n",cvfilename);
 
    // overwrite dmin, dmax
-   int dmin = meta[3]; 
+   int dmin = meta[3];
    int dmax = dmin+meta[2]-1;
 
    for(int i = 0; i < zdmin.npix; i++) zdmin[i] = dmin;
@@ -275,7 +275,7 @@ void read_costvolume(char* cvfilename, struct costvolume_t &CC, int nx, int ny, 
 struct costvolume_t right_costvolume_from_left(struct costvolume_t &CCL, int nxL, int nyL, int nxR, int nyR, struct Img &dminR, struct Img &dmaxR) {
 
    for(int i = 0; i < dminR.npix; i++) dminR[i] = INFINITY;
-   for(int i = 0; i < dmaxR.npix; i++) dmaxR[i] = -INFINITY; 
+   for(int i = 0; i < dmaxR.npix; i++) dmaxR[i] = -INFINITY;
 
    for(int y=0;y<nyL;y++) {
    for(int x=0;x<nxL;x++) {
@@ -309,4 +309,3 @@ struct costvolume_t right_costvolume_from_left(struct costvolume_t &CCL, int nxL
    return CCR;
 
 }
-

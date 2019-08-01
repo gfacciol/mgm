@@ -19,7 +19,7 @@ void zoom_nn(struct Img &in, struct Img *out, int fx, int fy) {
    // set default
    for(int y=0;y<onc*onr*nch;y++) (*out)[y]=0;
 
-   // copy 
+   // copy
    for(int y=0;y<onr;y++)
    for(int x=0;x<onc;x++)
    for(int c=0;c<nch;c++)
@@ -64,14 +64,14 @@ struct Img downsample2x(struct Img &u, float sigma) {
 
    // build the filter (gaussian)
    struct Img g(spatial_support,spatial_support);
-   for(int j=0;j<g.ny;j++) 
+   for(int j=0;j<g.ny;j++)
    for(int i=0;i<g.nx;i++) {
       g[i+j*g.nx]=exp( -sq(i-CX-.5,j-CX-.5)/(2.0*sigma*sigma) );
    }
 
-   // apply the filter 
-   for(int c=0;c<out.nch;c++) 
-   for(int j=0;j<out.ny;j++) 
+   // apply the filter
+   for(int c=0;c<out.nch;c++)
+   for(int j=0;j<out.ny;j++)
    for(int i=0;i<out.nx;i++) {
 
       float acc=0;
@@ -99,9 +99,9 @@ inline struct Img downsample2x_disp(struct Img &u, bool is_max) {
    // allocate output
    struct Img o(ceil(u.nx/2.0),ceil(u.ny/2.0),u.nch);
 
-   // apply the filter 
-   for(int c=0;c<u.nch;c++) 
-   for(int j=0;j<u.ny;j+=2) 
+   // apply the filter
+   for(int c=0;c<u.nch;c++)
+   for(int j=0;j<u.ny;j+=2)
    for(int i=0;i<u.nx;i+=2) {
       float vmin = INFINITY, vmax = -INFINITY;
       for(int k=0;k<2;k++) for(int l=0;l<2;l++) {
@@ -196,7 +196,7 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
        P1/=ZOOMFACTOR;
        P2=P2;
     } else {
-       // the conversion for USE_TRUNCATED_LINEAR_POTENTIALS==0  is not exact 
+       // the conversion for USE_TRUNCATED_LINEAR_POTENTIALS==0  is not exact
        P1/=ZOOMFACTOR;
        P2=P2;
     }
@@ -210,14 +210,14 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
         struct Img zdmin(dmin), zdmax(dmax);
         param->var_dict["right"] = 0;
 
-        // prepare the costvolume 
+        // prepare the costvolume
         if (param->str_dict.count("inputCostVolume") > 0) {
            // load the costvolume from disk and override dmin, dmax
            read_costvolume((char*)param->str_dict["inputCostVolume"].c_str(), CC, u.nx, u.ny, zdmin, zdmax);
            printf("Reading Costvolume: %d %d %f %f\n", u.nx, u.ny, image_minmax(zdmin).first, image_minmax(zdmax).second);
         } else {
            // scale dmin - dmax by the SUBPIX factor and compute costvolume
-           for(int i = 0; i < zdmin.npix; i++) zdmin[i] *= ZOOMFACTOR; 
+           for(int i = 0; i < zdmin.npix; i++) zdmin[i] *= ZOOMFACTOR;
            for(int i = 0; i < zdmax.npix; i++) zdmax[i] *= ZOOMFACTOR;
            CC = allocate_and_fill_sgm_costvolume (u, v, zdmin, zdmax, prefilter, distance, truncDist, ZOOMFACTOR);
         }
@@ -227,7 +227,7 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
            int vdmin = image_minmax(zdmin).first;
            int vdmax = image_minmax(zdmax).second;
            printf("%d %d %d %d\n", u.nx, u.ny, vdmin, vdmax);
-           dump_costvolume(CC, u.nx, u.ny, vdmin, vdmax,  (char*) "costvolume_left.dat"); 
+           dump_costvolume(CC, u.nx, u.ny, vdmin, vdmax,  (char*) "costvolume_left.dat");
         }
 
 
@@ -246,7 +246,7 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
         // extract the second local minimum from S
         param->img_dict["confidence_pkrL"] = compute_PKR_confidence(S, dl);
         second_local_minimum_from_costvolume(S, dl, &cl);
-        
+
         // call subpixel refinement  (modifies out and outcost)
         subpixel_refinement_sgm(S, dl.data, cl.data, refine);
 
@@ -255,10 +255,10 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
 
 
         //////// START right-left pass
-        struct Img zdminR(dminR), zdmaxR(dmaxR); 
+        struct Img zdminR(dminR), zdmaxR(dmaxR);
         param->var_dict["right"] = 1;
 
-        // prepare the costvolume 
+        // prepare the costvolume
         if (param->str_dict.count("inputCostVolume") > 0) {
            // load the costvolume from disk and override dmin, dmax
            CC = right_costvolume_from_left(CC, u.nx, u.ny, v.nx, v.ny, zdminR, zdmaxR);
@@ -277,13 +277,13 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
            int vdmin = image_minmax(zdminR).first;
            int vdmax = image_minmax(zdmaxR).second;
            printf("%d %d %d %d\n", v.nx, v.ny, vdmin, vdmax);
-           dump_costvolume(CC, v.nx, v.ny, vdmin, vdmax,  (char*) "costvolume_right.dat"); 
+           dump_costvolume(CC, v.nx, v.ny, vdmin, vdmax,  (char*) "costvolume_right.dat");
         }
 
 
         //for(int i = 0; i < TSGM_ITER(); i++)
         {
-            S = WITH_MGM2() ? 
+            S = WITH_MGM2() ?
                mgm(CC, v_w, zdminR, zdmaxR, &dr, &cr, P1, P2,
                     NDIR, TSGM(), param, USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) :
                mgm_naive_parallelism(CC, v_w, zdminR, zdmaxR, &dr, &cr, P1, P2,
@@ -296,7 +296,7 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
         // extract the second local minimum from S
         param->img_dict["confidence_pkrR"] = compute_PKR_confidence(S, dr);
         second_local_minimum_from_costvolume(S, dr, &cr);
-        
+
         // call subpixel refinement  (modifies out and outcost)
         subpixel_refinement_sgm(S, dr.data, cr.data, refine);
 
@@ -407,6 +407,3 @@ void recursive_multiscale(struct Img &u, struct Img &v,
 //}
 
 }
-
-
-
