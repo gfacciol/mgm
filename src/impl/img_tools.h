@@ -5,8 +5,7 @@
 #ifndef IMG_TOOLS_H_
 #define IMG_TOOLS_H_
 
-
-#include "img.h"
+#include "img_interp.h"
 #include <algorithm>
 #include <cmath>
 #include "point.h"
