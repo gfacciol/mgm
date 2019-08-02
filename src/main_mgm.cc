@@ -1,43 +1,8 @@
 /* Copyright (C) 2015, Gabriele Facciolo <facciolo@cmla.ens-cachan.fr>,
  *                     Carlo de Franchis <carlo.de-franchis@ens-cachan.fr>,
  *                     Enric Meinhardt <enric.meinhardt@cmla.ens-cachan.fr>*/
-// #include "stdlib.h"
-// #include "stdio.h"
-// #include "string.h"
-// #include "math.h"
-// #include <numeric>
-// #include <algorithm>
-// #include <vector>
-// #include <cstring>
-// #include <iostream>
-// #include <cmath>
-// #include "assert.h"
-//
-// #include "smartparameter.h"
-//
-// //// a structure to wrap images
-// #include "img_interp.h"
-// #include "point.h"
-//
-// #include "img_tools.h"
 
 #include "mgm/mgm.h"
-
-// // not used here but generally useful
-// typedef std::vector<float> FloatVector;
-
-
-//SMART_PARAMETER(TSGM_DEBUG,0)
-
-/********************** MGM *****************************/
-
-// #include "img_interp.h"
-// #include "img_tools.h"
-//
-//
-// #include "mgm_multiscale.h"
-// #include "stereo_utils.h"
-
 
 // c: pointer to original argc
 // v: pointer to original argv
@@ -59,11 +24,7 @@ static char *pick_option(int *c, char ***v, char *o, char *d)
     return d;
 }
 
-
-
 /*MGM*/
-
-
 SMART_PARAMETER(TSGM,4);
 SMART_PARAMETER(TSGM_FIX_OVERCOUNT,1);
 SMART_PARAMETER(TSGM_2LMIN,0);
@@ -71,20 +32,9 @@ SMART_PARAMETER(USE_TRUNCATED_LINEAR_POTENTIALS,0);
 
 SMART_PARAMETER(SUBPIX,1.0);
 
-//SMART_PARAMETER(WITH_MGM2,0);
-
-//SMART_PARAMETER(TSGM_ITER,1)
-//SMART_PARAMETER(TESTLRRL,1)
-//SMART_PARAMETER(MEDIAN,0)
-
-
-
 int main(int argc, char* argv[])
 {
-  // std::cout << "TSGM " << TSGM() << std::endl;
-  // TSGM(true, 2); // Reset TSGM here
-  // std::cout << "TSGM " << TSGM() << std::endl;
-	/* patameter parsing - parameters*/
+
 	if(argc<4)
 	{
 		fprintf (stderr, "too few parameters\n");
@@ -144,19 +94,20 @@ int main(int argc, char* argv[])
    char* wr_name   = pick_option(&argc, &argv, (char*) "wr", (char*) "");   //weights right
    char* inputCV   = pick_option(&argc, &argv, (char*) "inputCostVolume", (char*)"");
 
-
    // catch all the other optional output filenames
    char * const keyword_parameters[] = {(char*) "confidence_consensusL", (char*) "confidence_consensusR", // path consensus confidence
                                         (char*) "confidence_costL",      (char*) "confidence_costR",  // cost confidence
                                         (char*) "confidence_pkrL",       (char*) "confidence_pkrR",  // cost confidence
                                         (char*) "Rd",                    (char*) "Rc"}; // right disparity and cost maps
+
    int num_keyword_parameters = 8;
+
    std::vector< std::pair< std::string, std::string > >  other_keyword_parameters;
+
    for(int i = 0; i<num_keyword_parameters; i++) {
       char* fname = pick_option(&argc, &argv, keyword_parameters[i], (char*)"");
       other_keyword_parameters.push_back( std::pair< std::string, std::string>( keyword_parameters[i], fname )  );
    }
-
 
 	char* f_u     = (argc>i) ? argv[i] : NULL;      i++;
 	char* f_v     = (argc>i) ? argv[i] : NULL;      i++;
@@ -166,31 +117,31 @@ int main(int argc, char* argv[])
 
 	printf("%d %d\n", dmin, dmax);
 
-
 	// read input
 	struct Img u = iio_read_vector_split(f_u);
 	struct Img v = iio_read_vector_split(f_v);
 
-   remove_nonfinite_values_Img(u, 0);
-   remove_nonfinite_values_Img(v, 0);
+  remove_nonfinite_values_Img(u, 0);
+  remove_nonfinite_values_Img(v, 0);
 
 
-   struct Img dminI(u.nx, u.ny);
-   struct Img dmaxI(u.nx, u.ny);
-   for(int i=0;i<u.npix;i++) {dminI[i]=dmin; dmaxI[i]=dmax;}
+  struct Img dminI(u.nx, u.ny);
+  struct Img dmaxI(u.nx, u.ny);
+  for(int i=0;i<u.npix;i++) {dminI[i]=dmin; dmaxI[i]=dmax;}
 
-   if(strcmp (in_min_disp_file,"")!=0 ){
-   	dminI = iio_read_vector_split(in_min_disp_file);
-	   dmaxI = iio_read_vector_split(in_max_disp_file);
-      // sanity check for nans
-      remove_nonfinite_values_Img(dminI, dmin);
-      remove_nonfinite_values_Img(dmaxI, dmax);
+  if(strcmp (in_min_disp_file,"")!=0 )
+  {
+  	dminI = iio_read_vector_split(in_min_disp_file);
+	  dmaxI = iio_read_vector_split(in_max_disp_file);
+    // sanity check for nans
+    remove_nonfinite_values_Img(dminI, dmin);
+    remove_nonfinite_values_Img(dmaxI, dmax);
 
       // more hacks to prevent produce due to bad inputs (min>=max)
-      for (int i=0;i<u.npix;i++) {
-         if (dmaxI[i] < dminI[i] + 1) dmaxI[i] = ceil(dminI[i] + 1);
-      }
-   }
+    for (int i=0;i<u.npix;i++) {
+       if (dmaxI[i] < dminI[i] + 1) dmaxI[i] = ceil(dminI[i] + 1);
+    }
+  }
 
 
 	P1 = P1*u.nch; //8
@@ -203,47 +154,49 @@ int main(int argc, char* argv[])
    // variables for LR
 	struct Img outoffR  = Img(v.nx, v.ny);
 	struct Img outcostR = Img(v.nx, v.ny, 2);
-   struct Img dminRI(v.nx, v.ny);
-   struct Img dmaxRI(v.nx, v.ny);
-   for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
+  struct Img dminRI(v.nx, v.ny);
+  struct Img dmaxRI(v.nx, v.ny);
+
+  for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
+
+  struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
+
+  // load weights for the regularization term
+  if(strcmp (wl_name,"")!=0 && strcmp (wr_name,"")!=0)
+  {
+    param.img_dict["wl"] = iio_read_vector_split(wl_name);
+    param.img_dict["wr"] = iio_read_vector_split(wr_name);
+  }
+
+  // input Costvolume
+  if(strcmp(inputCV, "") != 0) param.str_dict["inputCostVolume"] = inputCV;
 
 
-   struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
-   // load weights for the regularization term
-   if(strcmp (wl_name,"")!=0 && strcmp (wr_name,"")!=0) {
-      param.img_dict["wl"] = iio_read_vector_split(wl_name);
-      param.img_dict["wr"] = iio_read_vector_split(wr_name);
-   }
-   // input Costvolume
-   if(strcmp(inputCV, "") != 0) param.str_dict["inputCostVolume"] = inputCV;
-
-
-   mgm_call(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, &param);
-
-
+  mgm_call(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, &param);
 
 	// save the disparity
 	iio_write_vector_split(f_out, outoff);
-   // generate the backprojected image
-   struct Img syn = backproject_image(u, v, outoff);
-   if(f_cost) iio_write_vector_split(f_cost, outcost);
-   if(f_back) iio_write_vector_split(f_back, syn);
+
+  // generate the backprojected image
+  struct Img syn = backproject_image(u, v, outoff);
+  if(f_cost) iio_write_vector_split(f_cost, outcost);
+  if(f_back) iio_write_vector_split(f_back, syn);
+
+  param.img_dict["Rd"] = outoffR;
+  param.img_dict["Rc"] = outcostR;
 
 
-   param.img_dict["Rd"] = outoffR;
-   param.img_dict["Rc"] = outcostR;
+  for(int i = 0; i < num_keyword_parameters; i++)
+  {
+    std::string keyword =  other_keyword_parameters[i].first;
+    std::string fname   =  other_keyword_parameters[i].second;
+    if ( fname != "" )
+      if (param.img_dict.count(keyword)>0)
+        iio_write_vector_split( (char*) fname.c_str(), param.img_dict[keyword.c_str()]);
+      else
+        printf("Ignoring keywork %s NOT FOUND in param.img_dict\n", keyword.c_str());
+  }
 
 
-   for(int i = 0; i < num_keyword_parameters; i++) {
-      std::string keyword =  other_keyword_parameters[i].first;
-      std::string fname   =  other_keyword_parameters[i].second;
-      if ( fname != "" )
-         if (param.img_dict.count(keyword)>0)
-            iio_write_vector_split( (char*) fname.c_str(), param.img_dict[keyword.c_str()]);
-         else
-            printf("Ignoring keywork %s NOT FOUND in param.img_dict\n", keyword.c_str());
-   }
-
-
-   return 0;
+  return 0;
 }
