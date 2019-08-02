@@ -21,11 +21,11 @@ Email: gabriele.facciolo@cmla.ens-cachan.fr
 
 This C++ code can be used for approximately optimizing MRF energies, defined on the 4- or 8-connected image grids, of the form:
 
-![\sum_p C_p(D_p) + \sum_{pq} w_{pq} V (D_p, D_q)](https://latex.codecogs.com/png.latex?%5Cdpi%7B150%7D%20%5Cbg_white%20%5Clarge%20E%28D%29%20%3D%20%5Csum_p%20C_p%28D_p%29%20&plus;%20%5Csum%7Bpq%7D%20w%7Bpq%7D%20V%20%28D_p%2C%20D_q%29)
+![E(D) = \sum_p C_p(D_p) + \sum_{pq} w_{pq} V (D_p, D_q)](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5CLARGE%20E%28D%29%20%3D%20%5Csum_p%20C_p%28D_p%29%20&plus;%20%5Csum_%7Bpq%7D%20w_%7Bpq%7D%20V%20%28D_p%2C%20D_q%29)
 
 Where ![C_p()](https://latex.codecogs.com/png.latex?%5Cinline%20%5Cdpi%7B150%7D%20%5Cbg_white%20%5Clarge%20C_p) denotes the unary term for the p-th node, the variables ![D_p](https://latex.codecogs.com/png.latex?%5Cinline%20%5Cdpi%7B150%7D%20%5Cbg_white%20%5Clarge%20D_p) take values in the range [0,L-1], ![C_p()](https://latex.codecogs.com/png.latex?%5Cinline%20%5Cdpi%7B150%7D%20%5Cbg_white%20%5Clarge%20C_p) is represented as a costvolume of size W x H x L.
 
-V() denotes the distance function used for specifying the pairwise potentials, it can take one of these two forms (with params P1,P2):
+![V()](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5CLARGE%20V%28%29) denotes the distance function used for specifying the pairwise potentials, it can take one of these two forms (with params P1,P2):
      1) SMG's potential (Hirschmuller'08)
 
                     |  0  if |a - b|==0
@@ -37,8 +37,8 @@ V() denotes the distance function used for specifying the pairwise potentials, i
 
           Vl(a,b) =  min(P1*|a - b|, P2).
 
-The edge weights are given by w_{pq}, w can actually be used to adapt the parameters P1 and P2 on the pixel basis as:
-                ![V (D_p, D_q, P1(w(p)), P2(w(p)) )), P2(w(p)) )](https://latex.codecogs.com/png.latex?%5Cinline%20%5Cdpi%7B150%7D%20%5Cbg_white%20%5Clarge%20V%20%28D_p%2C%20D_q%2C%20P1%28w%28p%29%29%2C%20P2%28w%28p%29%29%20%29)
+The edge weights are given by ![w_{pq}](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5CLARGE%20w_%7Bpq%7D), w can actually be used to adapt the parameters P1 and P2 on the pixel basis as:
+                ![V (D_p, D_q, P1(w(p)), P2(w(p)) )), P2(w(p)) )](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5CLARGE%20V%20%28D_p%2C%20D_q%2C%20P1%28w%28p%29%29%2C%20P2%28w%28p%29%29%20%29%29%2C%20P2%28w%28p%29%29%20%29)
 
 But the current implementation just multiplies the potential. The weights are represented as a stack of 8 images. For a pixel p each image of the stack contain the weight to the corresponding neighboring pixel: West, Est, S, N, (NW, NE, SE, SW).
 
