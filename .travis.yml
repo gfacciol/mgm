@@ -1,10 +1,18 @@
-language: c
+language: c++
+sudo: required
+
 
 matrix:
   include:
     - os: linux
     - os: osx
 
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libfftw3-dev; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install --force fftw; fi
+#  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then  (brew install gcc || brew link --overwrite gcc) && brew install fftw; fi
+
 script:
-  - make
-  - make test
+  - mkdir build && cd build && cmake .. && make 
+#  - make test

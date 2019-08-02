@@ -397,7 +397,7 @@ std::vector< Dvec > mgm(std::vector< Dvec > CC, const struct Img &in_w,
       // scan in the horizontal direction left to right
       for(int ii=0; ii<maxii+2*maxjj; ii++) {
       #pragma omp parallel for schedule(static,1)
-      for(int jj=0; jj<maxjj; jj++) 
+      for(int jj=0; jj<maxjj; jj++)
       {
          // ensure diagonal scan (slope 2)
          int x=ii -2*jj, y=jj;
@@ -485,7 +485,7 @@ std::vector< Dvec > mgm(std::vector< Dvec > CC, const struct Img &in_w,
          if (SGM_FIX_OVERCOUNT==1)
             S[i].set_nolock(o, S[i][o] - (NDIR -1) * CC[i][o]);
 
-         if(isfinite(S[i][o]))
+         if(std::isfinite(S[i][o]))
          if(minL > S[i][o]) {
             minL = S[i][o];
             minP = o;

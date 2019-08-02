@@ -5,7 +5,7 @@
 #ifndef IMG_TOOLS_H_
 #define IMG_TOOLS_H_
 
-#include "img.h"
+#include "img_interp.h"
 #include <algorithm>
 #include <cmath>
 #include "point.h"
@@ -15,7 +15,7 @@ extern "C" {
 
 /************ IMG IO  **************/
 
-struct Img iio_read_vector_split(char *nm)
+inline struct Img iio_read_vector_split(char *nm)
 {
 	struct Img out;
 	float *tmpout = iio_read_image_float_split(nm, &out.nx, &out.ny, &out.nch);
@@ -27,14 +27,14 @@ struct Img iio_read_vector_split(char *nm)
 
 
 
-void iio_write_vector_split(char *nm, struct Img &out)
+inline void iio_write_vector_split(char *nm, struct Img &out)
 {
 	// .front() -> .data() in C++11
-	iio_save_image_float_split(nm, &(out.data.front()), out.nx, out.ny, out.nch);
+	iio_write_image_float_split(nm, &(out.data.front()), out.nx, out.ny, out.nch);
 }
 
 
-void remove_nonfinite_values_Img(struct Img &u, float newval)
+inline void remove_nonfinite_values_Img(struct Img &u, float newval)
 {
    for(int i=0;i<u.npix*u.nch;i++)
       if (!std::isfinite(u[i])) u[i] = newval;
@@ -85,7 +85,7 @@ inline float valneumann(const struct Img &u, const int x, const int y, const int
 
 /************ IMG PROC **************/
 
-struct Img compute_insensity_image(struct Img &u) {
+inline struct Img compute_insensity_image(struct Img &u) {
    int nx = u.nx;
    int ny = u.ny;
    int nch= u.nch;
@@ -102,7 +102,7 @@ struct Img compute_insensity_image(struct Img &u) {
    return Intensity;
 }
 
-struct Img apply_filter(struct Img &u, struct Img &filter) {
+inline struct Img apply_filter(struct Img &u, struct Img &filter) {
    struct Img fu(u);
    int hfnx  = filter.nx  / 2;
    int hfny  = filter.ny  / 2;
@@ -126,13 +126,13 @@ struct Img apply_filter(struct Img &u, struct Img &filter) {
    return fu;
 }
 
-struct Img apply_filter(struct Img &u, float ff[], int fnx, int fny, int fnc) {
+inline struct Img apply_filter(struct Img &u, float ff[], int fnx, int fny, int fnc) {
    struct Img f(fnx,fny,fnc);
    for(int i=0;i<fnx*fny*fnc;i++) f[i] = ff[i];
    return apply_filter(u,f);
 }
 
-//struct Img sobel_x(struct Img &u) {
+//inline struct Img sobel_x(struct Img &u) {
 //   struct Img f(3,3,1);
 //   float ff[] = {-1,0,1, -1,0,1, -1,0,1};
 //   for(int i=0;i<9;i++) f[i] = ff[i];
@@ -141,12 +141,12 @@ struct Img apply_filter(struct Img &u, float ff[], int fnx, int fny, int fnc) {
 
 
 
-static float unnormalized_gaussian_function(float sigma, float x) {
+inline static float unnormalized_gaussian_function(float sigma, float x) {
 	return exp(-x*x/(2*sigma*sigma));
 }
 
 #define KWMAX 39
-static int gaussian_kernel_width(float sigma) {
+inline static int gaussian_kernel_width(float sigma) {
 	float radius = 3 * fabs(sigma);
 	int r = ceil(1 + 2*radius);
 	if (r < 1) r = 1;
@@ -154,7 +154,7 @@ static int gaussian_kernel_width(float sigma) {
 	return r;
 }
 
-static void fill_gaussian_kernel(float *k, int w, int h, float s) {
+inline static void fill_gaussian_kernel(float *k, int w, int h, float s) {
 	int cw = (w - 1)/2;
 	int ch = (h - 1)/2;
    float m = 0;
@@ -169,7 +169,7 @@ static void fill_gaussian_kernel(float *k, int w, int h, float s) {
    }
 }
 
-struct Img gblur_truncated(struct Img &u, float sigma) {
+inline struct Img gblur_truncated(struct Img &u, float sigma) {
    // determine the size of the kernel
    int rad = gaussian_kernel_width(sigma);
    struct Img fx(rad,1,1), fy(1,rad,1);
@@ -180,7 +180,7 @@ struct Img gblur_truncated(struct Img &u, float sigma) {
 }
 
 
-std::pair<float, float> image_minmax(struct Img &u){
+inline std::pair<float, float> image_minmax(struct Img &u){
    // returns global (finite) min and max of an image
    int nx = u.nx;
    int ny = u.ny;
@@ -200,7 +200,7 @@ std::pair<float, float> image_minmax(struct Img &u){
 }
 
 /// Median filter
-struct Img median_filter(struct Img &u, int radius) {
+inline struct Img median_filter(struct Img &u, int radius) {
     struct Img M(u);
     int size=2*radius+1;
     size *= size;
