@@ -38,7 +38,7 @@ V() denotes the distance function used for specifying the pairwise potentials, i
           Vl(a,b) =  min(P1*|a - b|, P2).
 
 The edge weights are given by w_{pq}, w can actually be used to adapt the parameters P1 and P2 on the pixel basis as:
-                ![V (assets/png-1564716460818.png), P2(w(p)) )](https://latex.codecogs.com/png.latex?%5Cinline%20%5Cdpi%7B150%7D%20%5Cbg_white%20%5Clarge%20V%20%28D_p%2C%20D_q%2C%20P1%28w%28p%29%29%2C%20P2%28w%28p%29%29%20%29)
+                ![V (D_p, D_q, P1(w(p)), P2(w(p)) )), P2(w(p)) )](https://latex.codecogs.com/png.latex?%5Cinline%20%5Cdpi%7B150%7D%20%5Cbg_white%20%5Clarge%20V%20%28D_p%2C%20D_q%2C%20P1%28w%28p%29%29%2C%20P2%28w%28p%29%29%20%29)
 
 But the current implementation just multiplies the potential. The weights are represented as a stack of 8 images. For a pixel p each image of the stack contain the weight to the corresponding neighboring pixel: West, Est, S, N, (NW, NE, SE, SW).
 
@@ -46,7 +46,7 @@ That is the first image just contains the weights for pixels to the left. For 4-
 
 
 
-## Stereo code:
+## Stereo code
 
 The code in this directory uses MGM for stereo.
 The option of the mgm program are shown when called without parameters.
@@ -125,3 +125,11 @@ The following line runs a similar experiment with a satellite image
 ### Visualising the Results
 
 As the results of the disparity matching are 32bit float images, you might want to use [pvflip](<https://github.com/gfacciol/pvflip>) to visualise them!
+
+
+
+### Parameters
+
+Some of the parameters that are exposed by the library and their explanations can be found [here](https://docs.google.com/spreadsheets/d/1RWZpUHwzIbBTrZQG7sjQVR7uFMCn35e54tAg5_dAWRI/edit?usp=sharing).
+
+Cheers!
