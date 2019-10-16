@@ -65,7 +65,7 @@ struct costvolume_t allocate_costvolume (struct Img min, struct Img max)
    struct costvolume_t cv;
    cv.vectors = std::vector< Dvec >(min.npix);
    for (int i=0;i< min.npix;i++) {
-      cv[i].init(min[i], max[i]);
+      cv[i].init(floorf(min[i]), ceilf(max[i]));
    }
 
    return cv;
