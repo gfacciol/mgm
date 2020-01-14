@@ -1,5 +1,6 @@
 #Copyright 2014, Gabriele Facciolo <facciolo@cmla.ens-cachan.fr> 
 cmake_minimum_required(VERSION 2.8)
+project(mgm)
 
 
 # SETUP A MAKE CLEAN TO CLEAN EVERYTHING

@@ -1,4 +1,4 @@
-CFLAGS   ?= -O3 -DNDEBUG -ffast-math -march=native
+CFLAGS   ?= -O3 -DNDEBUG -march=native 
 CXXFLAGS := $(CFLAGS)
 
 CPPFLAGS := -Iiio
