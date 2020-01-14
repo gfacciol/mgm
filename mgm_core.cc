@@ -821,7 +821,7 @@ struct costvolume_t mgm_naive_parallelism(struct costvolume_t CC, const struct I
 
 
 
-#else  // USE_OLD_NAIVE_MGM
+#else  // not USE_OLD_NAIVE_MGM
 
 // mgm returns the "aggregated" cost volume, out, and outcost without any other refinement
 // This is the NEW naive parallel implementation of MGM, all traversals (up to 8) are computed 

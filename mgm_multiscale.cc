@@ -346,16 +346,17 @@ void recursive_multiscale(struct Img &u, struct Img &v,
 //    float aP1=1, float aP2=1, float aThresh=INFINITY, int scale=0
 //    )
 
-   float maxdisp = -INFINITY, mindisp = INFINITY;
-   for (int i=0;i<dmin.npix;i++) {
-      maxdisp = fmax(maxdisp, dmax[i]);
-      mindisp = fmin(mindisp, dmin[i]);
-   }
-   float maxdispR = -INFINITY, mindispR = INFINITY;
-   for (int i=0;i<dminR.npix;i++) {
-      maxdispR = fmax(maxdispR, dmaxR[i]);
-      mindispR = fmin(mindispR, dminR[i]);
-   }
+// /* DEAD CODE */
+//   float maxdisp = -INFINITY, mindisp = INFINITY;
+//   for (int i=0;i<dmin.npix;i++) {
+//      maxdisp = fmax(maxdisp, dmax[i]);
+//      mindisp = fmin(mindisp, dmin[i]);
+//   }
+//   float maxdispR = -INFINITY, mindispR = INFINITY;
+//   for (int i=0;i<dminR.npix;i++) {
+//      maxdispR = fmax(maxdispR, dmaxR[i]);
+//      mindispR = fmin(mindispR, dminR[i]);
+//   }
 
 
    if(fmax(u.nx,u.ny) > 100 && fmin(u.nx,u.ny) > 50 && scale < numscales ) {

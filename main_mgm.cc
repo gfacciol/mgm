@@ -163,8 +163,10 @@ int main(int argc, char* argv[])
 
 
 	// read input
-	struct Img u = iio_read_vector_split(f_u);
-	struct Img v = iio_read_vector_split(f_v);
+   struct Img u_orig = iio_read_vector_split(f_u);
+   struct Img v_orig = iio_read_vector_split(f_v);
+   struct Img u(u_orig);
+   struct Img v(v_orig);
 
    remove_nonfinite_values_Img(u, 0);
    remove_nonfinite_values_Img(v, 0);
@@ -202,6 +204,14 @@ int main(int argc, char* argv[])
    struct Img dmaxRI(v.nx, v.ny);
    for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
 
+   // reset disparity range for NAN values in the images
+   // the new disparity range is a very small one
+   for (int i=0;i<outoff.npix;i++) {
+      if (std::isnan(u_orig[i])) { dminI[i] = dmin; dmaxI[i] = dmin+1; }
+   }
+   for (int i=0;i<outoffR.npix;i++) {
+      if (std::isnan(v_orig[i])) { dminRI[i] = dmin; dmaxRI[i] = dmin+1; }
+   }
 
    struct mgm_param param = {prefilter, refine, distance,truncDist,P1,P2,NDIR,aP1,aP2,aThresh,(float)SUBPIX()};
    // load weights for the regularization term
@@ -216,6 +226,13 @@ int main(int argc, char* argv[])
    mgm_call(u,v,dminI,dmaxI,dminRI,dmaxRI,outoff, outcost, outoffR, outcostR, &param);
 
 
+   // reset disparity for nan values in the images
+   for (int i=0;i<outoff.npix;i++) {
+      if (std::isnan(u_orig[i])) { outoff[i] = NAN; }
+   }
+   for (int i=0;i<outoffR.npix;i++) {
+      if (std::isnan(v_orig[i])) { outoffR[i] = NAN; }
+   }
 
 	
 	// save the disparity
@@ -233,11 +250,14 @@ int main(int argc, char* argv[])
    for(int i = 0; i < num_keyword_parameters; i++) {
       std::string keyword =  other_keyword_parameters[i].first;
       std::string fname   =  other_keyword_parameters[i].second;
-      if ( fname != "" ) 
-         if (param.img_dict.count(keyword)>0) 
+      if ( fname != "" ) {
+         if (param.img_dict.count(keyword)>0) {
             iio_write_vector_split( (char*) fname.c_str(), param.img_dict[keyword.c_str()]);
-         else 
+         }
+         else {
             printf("Ignoring keywork %s NOT FOUND in param.img_dict\n", keyword.c_str());
+         }
+      }
    }
 
 
