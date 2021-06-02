@@ -77,7 +77,7 @@ Compilation
 Example calls
 =============
 
-2.1. The following line runs MGM with 8 traversals (-O 8) with 3-neighbor
+The following line runs MGM with 8 traversals (-O 8) with 3-neighbor
      recursion (TSGM=3, mgm is usually 2, but this is NEW!).
 
      * The cost is measured in absolute differences of the horizontal
@@ -91,7 +91,7 @@ Example calls
       -truncDist 63 -s vfit -O 8 data/fountain23-im?.png /tmp/{disp,cost}.tif
 
 
-2.2. The following line runs MGM with 8 traversals (-O 8) with 3-neighbor recursion (TSGM=3, mgm is usually 2, but this is NEW!)
+The following line runs MGM with 8 traversals (-O 8) with 3-neighbor recursion (TSGM=3, mgm is usually 2, but this is NEW!)
 
       * the cost is CENSUS on 3x3 neighors,
       * for the regularity uses the FELZENSZWALB potential V
@@ -102,7 +102,7 @@ Example calls
     MEDIAN=1 CENSUS_NCC_WIN=3 USE_TRUNCATED_LINEAR_POTENTIALS=1  TSGM=3 ./mgm -P2 20000 -P1 2 -r -120 -R 30 \
       -t census -s vfit -O 8 data/fountain23-im?.png /tmp/{disp,cost}.tif
 
-2.3. The following line runs a similar experiment with a satellite image
+The following line runs a similar experiment with a satellite image
 
     OMP_NUM_THREADS=4 MEDIAN=1 CENSUS_NCC_WIN=5 TSGM=3 ./mgm -r -22 -R 19 -s vfit \
       -t census -O 8 data/rectified_{ref,sec}.tif /tmp/{disp,cost}.tif
