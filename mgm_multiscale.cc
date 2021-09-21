@@ -320,8 +320,8 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
        if(TESTLRRL()) {
           Img tmpL(dl);
           Img tmpR(dr);
-          leftright_test(dr, tmpL); // R-L
-          leftright_test(dl, tmpR); // L-R
+          leftright_test(dr, tmpL, TESTLRRL_TAU()); // R-L
+          leftright_test(dl, tmpR, TESTLRRL_TAU()); // L-R
        }
 
        // REMOVE ISOLATED DISPARITY CONNECTED COMPONENTS

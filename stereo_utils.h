@@ -9,7 +9,7 @@
 //
 #include "img.h"
 
-void leftright_test(struct Img &dx, struct Img &Rdx);
+void leftright_test(struct Img &dx, struct Img &Rdx, float tau=1.0);
 
 void leftright_test_bleyer(struct Img &dx, struct Img &Rdx);
 

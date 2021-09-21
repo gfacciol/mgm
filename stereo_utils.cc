@@ -6,7 +6,7 @@
 #include "img_tools.h"
 #include <cmath>
 
-void leftright_test(struct Img &dx, struct Img &Rdx)
+void leftright_test(struct Img &dx, struct Img &Rdx, float tau=1.0)
 {
     int nc = dx.ncol;
     int nr = dx.nrow;
@@ -21,7 +21,7 @@ void leftright_test(struct Img &dx, struct Img &Rdx)
             if( (Lx)<Rnc && (Lx)>=0 ){
                 int Lidx = Lx + y*Rnc;
                 float Rx = Lx + Rdx[Lidx];
-                if ( fabs(Rx-x) > 1) {
+                if ( fabs(Rx-x) > tau ) {
                     dx[i]  = NAN;
                 }
             }else {

@@ -68,7 +68,8 @@ int main(int argc, char* argv[])
         fprintf (stderr, "    [-confidence_consensusL fnameL -confidence_consensusR fnameR]: left and right consensus confidence maps\n");
         fprintf (stderr, "    [-inputCostVolume filename]: file containing the costvolume of the left image\n");
         fprintf (stderr, "    ENV: CENSUS_NCC_WIN=3   : size of the window for census and NCC\n");
-        fprintf (stderr, "    ENV: TESTLRRL=1   : lrrl\n");
+		  fprintf (stderr, "    ENV: TESTLRRL=1      : activat Left-Right test\n");
+		  fprintf (stderr, "    ENV: TESTLRRL_TAU=1.0: Left-Right test threshold\n");
 		  fprintf (stderr, "    ENV: REMOVESMALLCC=0 : remove connected components of disp. smaller than (recomended 25)\n");
 		  fprintf (stderr, "    ENV: MINDIFF=-1   : remove disp. inconsistent with minfilter on a window of size CENSUS_NCC_WIN (recommended 1)\n");
         fprintf (stderr, "    ENV: TSGM=4       : regularity level\n");
