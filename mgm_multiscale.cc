@@ -317,7 +317,7 @@ void mgm_call(struct Img &u, struct Img &v,   // source (reference) image
           mindiff(dl, cr, CENSUS_NCC_WIN(), MINDIFF());
 
        // LRRL
-       if(TESTLRRL()) {
+       if(TESTLRRL()==1) {
           Img tmpL(dl);
           Img tmpR(dr);
           leftright_test(dr, tmpL, TESTLRRL_TAU()); // R-L
