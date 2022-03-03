@@ -200,23 +200,39 @@ std::pair<float, float> image_minmax(struct Img &u){
 }
 
 /// Median filter
-struct Img median_filter(struct Img &u, int radius) {
-    struct Img M(u);
+struct Img median_filter(struct Img const& u, int radius) {
+
+    struct Img M = u; // make a copy
     int size=2*radius+1;
     size *= size;
+
     std::vector<float> v(size);
-    for(int k=0; k<M.nch; k++)
-    for(int y=0; y<M.ny; y++)
-    for(int x=0; x<M.nx; x++)
-    {
-       int n=0;
-       for(int j=-radius; j<=radius; j++)
-          if(0<=j+y && j+y<u.ny)
-             for(int i=-radius; i<=radius; i++)
-                if(0<=i+x && i+x<u.nx && ! std::isnan(M.val(i+x,j+y,k)) )
-                   v[n++] = M.val(i+x,j+y,k);
-       std::nth_element(v.begin(), v.begin()+n/2, v.end());
-       M.val(x,y,k) = v[n/2];
+    for(int k=0; k<M.nch; k++) {
+      for(int y=0; y<M.ny; y++) {
+        for(int x=0; x<M.nx; x++) {
+
+          // ensure the buffer always starts clean
+          v.clear();
+
+          // Find the values in given window
+          for(int j=-radius; j<=radius; j++) {
+            if(0<=j+y && j+y<u.ny) {
+              for(int i=-radius; i<=radius; i++) {
+                if(0<=i+x && i+x<u.nx && !std::isnan(u.val(i+x,j+y,k))){
+                  v.push_back(u.val(i+x,j+y,k));
+                }
+              }
+            }
+          }
+
+          // Find the median
+          if (!v.empty()) {
+            std::nth_element(v.begin(), v.begin()+v.size()/2, v.end());
+            M.val(x,y,k) = v[v.size()/2];
+          }
+          
+        }
+      }
     }
     return M;
 }
