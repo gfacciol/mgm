@@ -1,4 +1,4 @@
-CFLAGS=-Iiio -O3 -DNDEBUG -ffast-math
+CFLAGS=-Iiio -O3 -DNDEBUG
 LDFLAGS=-lpng -ltiff -ljpeg -lm
 #CFLAGS=-Iiio -g
 CXXFLAGS=$(CFLAGS)
