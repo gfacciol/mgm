@@ -461,7 +461,7 @@ std::vector< Dvec > mgm(std::vector< Dvec > CC, const struct Img &in_w,
                update_costW(Lr[pidx], CC[pidx], Lr[pridx], Lr[pr2idx], Lr[pr3idx], Lr[pr4idx], P1, P2, 
                      1.0, 1.0, 1.0, 1.0, MGM);
          }
-
+         Lr[pidx].get_minvalue();    // precompute min value in the current list
       }
    }
 

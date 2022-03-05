@@ -192,6 +192,7 @@ SMART_PARAMETER(WITH_MGM2,0);
 
 SMART_PARAMETER(TSGM_ITER,1)
 SMART_PARAMETER(TESTLRRL,1)
+SMART_PARAMETER(TESTLRRL_TAU,1.0)
 SMART_PARAMETER(MEDIAN,0)
 
 
@@ -213,7 +214,8 @@ int main(int argc, char* argv[])
 		fprintf (stderr, "        [-aThresh     (5)]: Threshold for the multiplier factor (default 5)\n");
 		fprintf (stderr, "        [-l   FILE (none)]: write disparity without LR test (default none)\n");
 		fprintf (stderr, "        ENV: CENSUS_NCC_WIN=3   : size of the window for census and NCC\n");
-		fprintf (stderr, "        ENV: TESTLRRL=1   : lrrl\n");
+		fprintf (stderr, "        ENV: TESTLRRL=1         : activat Left-Right test\n");
+		fprintf (stderr, "        ENV: TESTLRRL_TAU=1.0   : Left-Right test threshold in pixels\n");
 		fprintf (stderr, "        ENV: MEDIAN=0     : radius of the median filter postprocess\n");
 		fprintf (stderr, "        ENV: TSGM=4       : regularity level\n");
 		fprintf (stderr, "        ENV: TSGM_ITER=1  : iterations\n");
@@ -346,8 +348,8 @@ int main(int argc, char* argv[])
       if(MEDIAN()) outoffR = median_filter(outoffR,MEDIAN());
       Img tmpL(outoff);
       Img tmpR(outoffR);
-      leftright_test(outoffR, tmpL); // R-L
-      leftright_test(outoff, tmpR);  // L-R
+      leftright_test(outoffR, tmpL, TESTLRRL_TAU()); // R-L
+      leftright_test(outoff,  tmpR, TESTLRRL_TAU()); // L-R
    }
 
 
