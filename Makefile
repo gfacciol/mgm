@@ -1,8 +1,8 @@
-CFLAGS   ?= -O3 -DNDEBUG -ffast-math -march=native
-CXXFLAGS := $(CFLAGS)
+CFLAGS=-Iiio -O3 -DNDEBUG
+LDFLAGS=-lpng -ltiff -ljpeg -lm
+#CFLAGS=-Iiio -g
+CXXFLAGS=$(CFLAGS)
 
-CPPFLAGS := -Iiio
-LDLIBS   := -lpng -ltiff -ljpeg -lm
 
 # The following conditional statement appends "-std=gnu99" to CFLAGS when the
 # compiler does not define __STDC_VERSION__.  The idea is that many older
