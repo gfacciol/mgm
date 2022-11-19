@@ -1,0 +1,23 @@
+name: test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: install dependencies
+      run: |
+           sudo apt update
+           sudo apt install libjpeg-dev libtiff-dev libpng-dev libwebp-dev
+
+    - name: compile
+      run: make
+
+    - name: test
+      run: make test
+
