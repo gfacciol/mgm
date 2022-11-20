@@ -14,13 +14,13 @@
 
 #include "smartparameter.h"
 
-//// a structure to wrap images 
+//// a structure to wrap images
 #include "img.h"
 #include "point.h"
 
 #include "img_tools.h"
 
-// // not used here but generally useful 
+// // not used here but generally useful
 // typedef std::vector<float> FloatVector;
 
 
@@ -29,8 +29,8 @@ SMART_PARAMETER(TSGM_DEBUG,0)
 /********************** COSTVOLUME *****************************/
 
 #include "mgm_costvolume.h"
-struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // source (reference) image                      
-                                                      struct Img &in_v, // destination (match) image                  
+struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // source (reference) image
+                                                      struct Img &in_v, // destination (match) image
                                                       struct Img &dminI,// per pixel max&min disparity
                                                       struct Img &dmaxI,
                                                       char* prefilter,        // none, sobel, census(WxW)
@@ -40,10 +40,10 @@ struct costvolume_t allocate_and_fill_sgm_costvolume (struct Img &in_u, // sourc
 /********************** MGM *****************************/
 
 #include "mgm_core.cc"
-struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w, 
-                        const struct Img &dminI, const struct Img &dmaxI, 
-                        struct Img *out, struct Img *outcost, 
-                        const float P1, const float P2, const int NDIR, const int MGM, 
+struct costvolume_t mgm(struct costvolume_t CC, const struct Img &in_w,
+                        const struct Img &dminI, const struct Img &dmaxI,
+                        struct Img *out, struct Img *outcost,
+                        const float P1, const float P2, const int NDIR, const int MGM,
                         const int USE_FELZENSZWALB_POTENTIALS, // USE SGM(0) or FELZENSZWALB(1) POTENTIALS
                         int SGM_FIX_OVERCOUNT);                // fix the overcounting in SGM following (Drory etal. 2014)
 
@@ -54,12 +54,12 @@ struct Img compute_mgm_weights(struct Img &u, float aP, float aThresh);
 
 #include "mgm_refine.h"
 void subpixel_refinement_sgm(struct costvolume_t &S,       // modifies out and outcost
-                             std::vector<float > &out,  
-                             std::vector<float > &outcost, 
+                             std::vector<float > &out,
+                             std::vector<float > &outcost,
                              char *refinement); //none, vfit, parabola, cubic, parabolaOCV
 
 #include "mgm_print_energy.h"
-void print_solution_energy(const struct Img &in_u, std::vector<float > &disp, 
+void print_solution_energy(const struct Img &in_u, std::vector<float > &disp,
                            struct costvolume_t &CC, float P1, float P2);
 
 /********************** OTHERSTUFF  *****************************/
@@ -147,7 +147,7 @@ std::pair<float, float> update_dmin_dmax(struct Img outoff, struct Img *dminI, s
          }
       }
       if (std::isfinite(dmin)) {
-         dminI2[i+j*nx] = dmin; dmaxI2[i+j*nx] = dmax; 
+         dminI2[i+j*nx] = dmin; dmaxI2[i+j*nx] = dmax;
       }
 
    }
@@ -195,12 +195,83 @@ SMART_PARAMETER(TESTLRRL,1)
 SMART_PARAMETER(TESTLRRL_TAU,1.0)
 SMART_PARAMETER(MEDIAN,0)
 
+const char *help_version = "mgm 2.0";
+const char *help_name    = "mgm";
+const char *help_descr   = "Compute stereo disparities by the MGM algorithm.";
+const char *help_usage   = "usage:\n\tmgm [-options] u v out [cost [backflow]]";
+const char *help_long    =
+"Mgm computes a disparity map between two rectified images.\n"
+"The algorithm is described in the article\n"
+"\n"
+"    \"MGM: A Significantly More Global Matching for Stereovision\".\n"
+"    G. Facciolo and C. de Franchis and E. Meinhardt\n"
+"    British Machine Vision Conference 2015\n"
+"\n"
+"All the parameters in the paper are accessible by options of this program.\n"
+"See http://dev.ipol.im/~facciolo/mgm/ for more details.\n"
+"\n"
+"Usage: mgm [options] in_u in_v out_disp\n"
+"   or: mgm [options] in_u in_v out_disp out_cost\n"
+"   or: mgm [options] in_u in_v out_disp out_cost out_backflow\n"
+"\n"
+"Options:\n"
+" -h                Display short help message.\n"
+" --help            Display longer help message.\n"
+" --version         Print version of mgm.\n"
+" -r {-30}          Minimum horizontal disparity value.\n"
+" -R {30}           Maximum horizontal disparity value.\n"
+" -O {4}            Number of search directions. Options: 2, 4, 8, 16. \n"
+" -P1 {8}           SGM regularization parameter P1.\n"
+" -P2 {32}          SGM regularization parameter P2.\n"
+" -p {none}         Prefilter algorithm: none, census, sobelx, gblur.\n"
+"                   The ``census`` mode uses a window of size CENSUS_NCC_WIN.\n"
+" -t {ad}           Distance function: census, ad, sd, ncc, btad, btsd.\n"
+"                   For ``ncc`` the window is of size CENSUS_NCC_WIN.\n"
+"                   The ``bt`` option is the Birchfield-Tomasi distance.\n"
+" -truncDist {inf}  Truncate distances at nch * truncDist.\n"
+" -s {none}         Subpixel refinement method: none, vfit, parabola, cubic.\n"
+" -aP1 {1}          Multiplier of P1 when sum |I1 - I2|^2 < nch * aThresh^2.\n"
+" -aP2 {1}:         Multiplier of P2 as above.\n"
+" -aThresh {5}      Threshold for the multiplier factors.\n"
+" -m FILE {none}    A file with minimum input disparity per pixel.\n"
+" -M FILE {none}    A file with maximum input disparity per pixel.\n"
+" -l FILE {none}    Write here the disparity before the left-to-right test.\n"
+"\n"
+"Environment:\n"
+"\n"
+" CENSUS_NCC_WIN=3      Size of the window for the census prefilter and NCC.\n"
+" TESTLRRL=1            If 1, do left-to-right and r-to-l consistency checks.\n"
+" MEDIAN=0:             Radius of the median filter postprocessing.\n"
+" TSGM=4                Regularity level.\n"
+" TSGM_ITER=1           Number of iterations.\n"
+" TSGM_FIX_OVERCOUNT=1  If 1, fix overcounting of the data term in the energy.\n"
+" TSGM_DEBUG=0          If 1, print debug information.\n"
+" TSGM_2LMIN=0          Use the improved TSGM cost only for TSGM=2. Overrides the TSGM value.\n"
+" USE_TRUNCATED_LINEAR_POTENTIALS=0  If 1, use the Felzenszwalb-Huttenlocher\n"
+"                                    truncated linear potential.  Then P1 and\n"
+"                                    P2 change meaning.  The potential\n"
+"                                    becomes V(p,q) = min(P2, P1*|p-q|)."
+"\n"
+"Examples:\n"
+" mgm u.tif v.tif disp_uv.tif           compute disparities between u and v\n"
+" mgm u.tif v.tif disp_uv.tif cost.tif  ...and save the matching costs\n"
+" MEDIAN=1 mgm ...                      ...enable median filter preprocessing\n"
+" TESTLRRL=0 mgm ...                    ...disable output consistency checks\n"
+" mgm u.tif v.tif disp.tif -l d0.tif    ...save pre-filtered disparities\n"
+"\n"
+"Report bugs to <gabriele.facciolo@ens-paris-saclay.fr>."
+;
 
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
-	/* patameter parsing - parameters*/
-	if(argc<4)
+	// print help if needed
+	if (argc<2 || !strcmp(argv[1], "-h")) return 0*puts(help_usage);
+	if (!strcmp(argv[1], "-?"         )) return 0*puts(help_descr);
+	if (!strcmp(argv[1], "--help"     )) return 0*puts(help_long);
+	if (!strcmp(argv[1], "--version"  )) return 0*puts(help_version);
+
+	if (argc<4)
 	{
 		fprintf (stderr, "too few parameters\n");
 		fprintf (stderr, "   usage: %s  [-r dmin -R dmax] [-m dminImg -M dmaxImg] [-O NDIR: 2, (4), 8, 16] u v out [cost [backflow]]\n",argv[0]);
@@ -227,137 +298,137 @@ int main(int argc, char* argv[])
 		fprintf (stderr, "                          : The potential they describe becomes:  V(p,q) = min(P2,  P1*|p-q|)\n");
 		return 1;
 	}
-	
-	
-	//read the parameters
-   int i = 1;
-   char *in_min_disp_file = pick_option(&argc, &argv, (char*) "m", (char*) "");
-   char *in_max_disp_file = pick_option(&argc, &argv, (char*) "M", (char*) "");
-   int dmin = atoi(pick_option(&argc, &argv, (char*) "r", (char*) "-30"));
-   int dmax = atoi(pick_option(&argc, &argv, (char*) "R", (char*) "30"));
-   int NDIR  = atoi(pick_option(&argc, &argv, (char*) "O", (char*) "4"));
-   float P1  = atof(pick_option(&argc, &argv, (char*) "P1", (char*) "8"));
-   float P2  = atof(pick_option(&argc, &argv, (char*) "P2", (char*) "32"));
-   float aP1 = atof(pick_option(&argc, &argv, (char*) "aP1", (char*) "1"));
-   float aP2 = atof(pick_option(&argc, &argv, (char*) "aP2", (char*) "1"));
-   float aThresh = atof(pick_option(&argc, &argv, (char*) "aThresh", (char*) "5"));
 
-   char* distance  = pick_option(&argc, &argv, (char*) "t", (char*) "ad");   //{census|ad|sd|ncc|btad|btsd}
-   char* prefilter = pick_option(&argc, &argv, (char*) "p", (char*) "none"); //{none|census|sobelx}
-   char* refine    = pick_option(&argc, &argv, (char*) "s", (char*) "none"); //{none|vfit|parabola|cubic}
-   float truncDist = atof(pick_option(&argc, &argv, (char*) "truncDist",  (char*) "inf"));
-   char *nolr_disp_file = pick_option(&argc, &argv, (char*) "l", (char*) "");
+	// extract named parameters
+	char *in_min_disp_file = pick_option(&argc, &argv, (char*) "m", (char*) "");
+	char *in_max_disp_file = pick_option(&argc, &argv, (char*) "M", (char*) "");
+	int dmin = atoi(pick_option(&argc, &argv, (char*) "r", (char*) "-30"));
+	int dmax = atoi(pick_option(&argc, &argv, (char*) "R", (char*) "30"));
+	int NDIR  = atoi(pick_option(&argc, &argv, (char*) "O", (char*) "4"));
+	float P1  = atof(pick_option(&argc, &argv, (char*) "P1", (char*) "8"));
+	float P2  = atof(pick_option(&argc, &argv, (char*) "P2", (char*) "32"));
+	float aP1 = atof(pick_option(&argc, &argv, (char*) "aP1", (char*) "1"));
+	float aP2 = atof(pick_option(&argc, &argv, (char*) "aP2", (char*) "1"));
+	float aThresh = atof(pick_option(&argc, &argv, (char*) "aThresh", (char*) "5"));
 
-	char* f_u     = (argc>i) ? argv[i] : NULL;      i++;
-	char* f_v     = (argc>i) ? argv[i] : NULL;      i++;
-	char* f_out   = (argc>i) ? argv[i] : NULL;      i++;
-	char* f_cost  = (argc>i) ? argv[i] : NULL;      i++;
-	char* f_back  = (argc>i) ? argv[i] : NULL;      i++;
-	
+	char* distance  = pick_option(&argc, &argv, (char*) "t", (char*) "ad");   //{census|ad|sd|ncc|btad|btsd}
+	char* prefilter = pick_option(&argc, &argv, (char*) "p", (char*) "none"); //{none|census|sobelx}
+	char* refine    = pick_option(&argc, &argv, (char*) "s", (char*) "none"); //{none|vfit|parabola|cubic}
+	float truncDist = atof(pick_option(&argc, &argv, (char*) "truncDist",  (char*) "inf"));
+	char *nolr_disp_file = pick_option(&argc, &argv, (char*) "l", (char*) "");
+
+	// fill-in positional parameters
+	int i = 1;
+	char* filename_u     = (argc>i) ? argv[i] : NULL;      i++;
+	char* filename_v     = (argc>i) ? argv[i] : NULL;      i++;
+	char* filename_out   = (argc>i) ? argv[i] : NULL;      i++;
+	char* filename_cost  = (argc>i) ? argv[i] : NULL;      i++;
+	char* filename_back  = (argc>i) ? argv[i] : NULL;      i++;
+
 	printf("%d %d\n", dmin, dmax);
-	
-	
+
+
 	// read input
-	struct Img u = iio_read_vector_split(f_u);
-	struct Img v = iio_read_vector_split(f_v);
+	struct Img u = iio_read_vector_split(filename_u);
+	struct Img v = iio_read_vector_split(filename_v);
 
-   remove_nonfinite_values_Img(u, 0);
-   remove_nonfinite_values_Img(v, 0);
+	remove_nonfinite_values_Img(u, 0);
+	remove_nonfinite_values_Img(v, 0);
 
-   struct Img dminI(u.nx, u.ny);
-   struct Img dmaxI(u.nx, u.ny);
-   for(int i=0;i<u.npix;i++) {dminI[i]=dmin; dmaxI[i]=dmax;}
+	struct Img dminI(u.nx, u.ny);
+	struct Img dmaxI(u.nx, u.ny);
+	for(int i=0;i<u.npix;i++) {dminI[i]=dmin; dmaxI[i]=dmax;}
 
-   if(strcmp (in_min_disp_file,"")!=0 ){
-   	dminI = iio_read_vector_split(in_min_disp_file);
-	   dmaxI = iio_read_vector_split(in_max_disp_file);
-      // sanity check for nans
-      remove_nonfinite_values_Img(dminI, dmin);
-      remove_nonfinite_values_Img(dmaxI, dmax);
+	if(strcmp (in_min_disp_file,"")!=0 ){
+		dminI = iio_read_vector_split(in_min_disp_file);
+		dmaxI = iio_read_vector_split(in_max_disp_file);
+		// sanity check for nans
+		remove_nonfinite_values_Img(dminI, dmin);
+		remove_nonfinite_values_Img(dmaxI, dmax);
 
-      // more hacks to prevent produce due to bad inputs (min>=max)
-      for (int i=0;i<u.npix;i++) {
-         if (dmaxI[i] < dminI[i] + 1) dmaxI[i] = ceil(dminI[i] + 1);
-      }
-   }
-	
+		// more hacks to prevent produce due to bad inputs (min>=max)
+		for (int i=0;i<u.npix;i++) {
+			if (dmaxI[i] < dminI[i] + 1) dmaxI[i] = ceil(dminI[i] + 1);
+		}
+	}
+
 
 	P1 = P1*u.nch; //8
 	P2 = P2*u.nch; //32
-	
+
 	// call
 	struct Img outoff  = Img(u.nx, u.ny);
 	struct Img outcost = Img(u.nx, u.ny);
 
-   // variables for LR
+	// variables for LR
 	struct Img outoffR  = Img(v.nx, v.ny);
 	struct Img outcostR = Img(v.nx, v.ny);
-   struct Img dminRI(v.nx, v.ny);
-   struct Img dmaxRI(v.nx, v.ny);
-   for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
+	struct Img dminRI(v.nx, v.ny);
+	struct Img dmaxRI(v.nx, v.ny);
+	for(int i = 0; i < v.npix; i++) {dminRI[i] = -dmax; dmaxRI[i] = -dmin;}
 
 
 
-   struct Img u_w = compute_mgm_weights(u, aP2, aThresh); // missing aP1 !! TODO
-   struct Img v_w = compute_mgm_weights(v, aP2, aThresh);
+	struct Img u_w = compute_mgm_weights(u, aP2, aThresh); // missing aP1 !! TODO
+	struct Img v_w = compute_mgm_weights(v, aP2, aThresh);
 
 
-   struct costvolume_t CC = allocate_and_fill_sgm_costvolume (u, v, dminI, dmaxI, prefilter, distance, truncDist);
-   for(int i = 0; i < TSGM_ITER(); i++) {
-      struct costvolume_t S = WITH_MGM2() ?  
-                                 mgm_naive_parallelism(CC, u_w, dminI, dmaxI, &outoff, &outcost, P1, P2, 
-                                    NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) :
-                                 mgm(CC, u_w, dminI, dmaxI, &outoff, &outcost, P1, P2, 
-                                    NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) ;
-      print_solution_energy(u, outoff.data, CC, P1, P2);
-      // call subpixel refinement  (modifies out and outcost)
-      subpixel_refinement_sgm(S, outoff.data, outcost.data, refine);
-      std::pair<float,float>gminmax = update_dmin_dmax(outoff, &dminI, &dmaxI);
-      remove_nonfinite_values_Img(dminI, gminmax.first);
-      remove_nonfinite_values_Img(dmaxI, gminmax.second);
-//       char name[200]; sprintf(name, "/tmp/%02d.tif", i); // DEBUG
-//	      iio_write_vector_split(name, outoff); // DEBUG
-//         // dump disp range
-//       struct Img rr = Img(dmaxI);
-//       for(int i=0;i<rr.npix;i++) rr[i] -= dminI[i];
-//	      iio_write_vector_split(name, rr); // DEBUG
-   }
-   if(MEDIAN()) outoff = median_filter(outoff,MEDIAN());
+	struct costvolume_t CC = allocate_and_fill_sgm_costvolume (u, v, dminI, dmaxI, prefilter, distance, truncDist);
+	for(int i = 0; i < TSGM_ITER(); i++) {
+		struct costvolume_t S = WITH_MGM2() ?
+			mgm_naive_parallelism(CC, u_w, dminI, dmaxI, &outoff, &outcost, P1, P2,
+					NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) :
+			mgm(CC, u_w, dminI, dmaxI, &outoff, &outcost, P1, P2,
+					NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) ;
+		print_solution_energy(u, outoff.data, CC, P1, P2);
+		// call subpixel refinement  (modifies out and outcost)
+		subpixel_refinement_sgm(S, outoff.data, outcost.data, refine);
+		std::pair<float,float>gminmax = update_dmin_dmax(outoff, &dminI, &dmaxI);
+		remove_nonfinite_values_Img(dminI, gminmax.first);
+		remove_nonfinite_values_Img(dmaxI, gminmax.second);
+		//       char name[200]; sprintf(name, "/tmp/%02d.tif", i); // DEBUG
+		//	      iio_write_vector_split(name, outoff); // DEBUG
+		//         // dump disp range
+		//       struct Img rr = Img(dmaxI);
+		//       for(int i=0;i<rr.npix;i++) rr[i] -= dminI[i];
+		//	      iio_write_vector_split(name, rr); // DEBUG
+	}
+	if(MEDIAN()) outoff = median_filter(outoff,MEDIAN());
 
 
 	// save the disparity without LR
 	if( 0 != strcmp (nolr_disp_file, "") )
-      iio_write_vector_split(nolr_disp_file, outoff);
-
-   
-   if(TESTLRRL()) {
-      struct costvolume_t CC = allocate_and_fill_sgm_costvolume (v, u, dminRI, dmaxRI, prefilter, distance, truncDist);
-      for(int i = 0; i < TSGM_ITER(); i++) {
-         struct costvolume_t S = WITH_MGM2() ?  
-                                    mgm_naive_parallelism(CC, v_w, dminRI, dmaxRI, &outoffR, &outcostR, P1, P2, 
-                                       NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) :
-                                    mgm(CC, v_w, dminRI, dmaxRI, &outoffR, &outcostR, P1, P2, 
-                                       NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) ;
-         print_solution_energy(v, outoffR.data, CC, P1, P2);
-         // call subpixel refinement  (modifies out and outcost)
-         subpixel_refinement_sgm(S, outoffR.data, outcostR.data, refine);
-         std::pair<float,float>gminmax = update_dmin_dmax(outoffR, &dminRI, &dmaxRI);
-         remove_nonfinite_values_Img(dminRI, gminmax.first);
-         remove_nonfinite_values_Img(dmaxRI, gminmax.second);
-      }
-      if(MEDIAN()) outoffR = median_filter(outoffR,MEDIAN());
-      Img tmpL(outoff);
-      Img tmpR(outoffR);
-      leftright_test(outoffR, tmpL, TESTLRRL_TAU()); // R-L
-      leftright_test(outoff,  tmpR, TESTLRRL_TAU()); // L-R
-   }
+		iio_write_vector_split(nolr_disp_file, outoff);
 
 
-	
+	if(TESTLRRL()) {
+		struct costvolume_t CC = allocate_and_fill_sgm_costvolume (v, u, dminRI, dmaxRI, prefilter, distance, truncDist);
+		for(int i = 0; i < TSGM_ITER(); i++) {
+			struct costvolume_t S = WITH_MGM2() ?
+				mgm_naive_parallelism(CC, v_w, dminRI, dmaxRI, &outoffR, &outcostR, P1, P2,
+						NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) :
+				mgm(CC, v_w, dminRI, dmaxRI, &outoffR, &outcostR, P1, P2,
+						NDIR, TSGM(), USE_TRUNCATED_LINEAR_POTENTIALS(), TSGM_FIX_OVERCOUNT()) ;
+			print_solution_energy(v, outoffR.data, CC, P1, P2);
+			// call subpixel refinement  (modifies out and outcost)
+			subpixel_refinement_sgm(S, outoffR.data, outcostR.data, refine);
+			std::pair<float,float>gminmax = update_dmin_dmax(outoffR, &dminRI, &dmaxRI);
+			remove_nonfinite_values_Img(dminRI, gminmax.first);
+			remove_nonfinite_values_Img(dmaxRI, gminmax.second);
+		}
+		if(MEDIAN()) outoffR = median_filter(outoffR,MEDIAN());
+		Img tmpL(outoff);
+		Img tmpR(outoffR);
+		leftright_test(outoffR, tmpL, TESTLRRL_TAU()); // R-L
+		leftright_test(outoff,  tmpR, TESTLRRL_TAU()); // L-R
+	}
+
+
+
 	// save the disparity
 	struct Img out = Img(u.nx, u.ny);
 	for(int i=0;i<u.nx*u.ny;i++) out.data[i]=outoff[i];
-	
+
 	// generate the backprojected image
 	struct Img syn = Img(u.nx, u.ny, u.nch);
 	for(int x=0;x<u.nx;x++)
@@ -365,15 +436,15 @@ int main(int argc, char* argv[])
 			Point p(x,y);
 			Point q = Point(outoff[x+u.nx*y],0);
 			for(int c=0;c<u.nch;c++)
-				if( check_inside_image(p+q, v) ) 
+				if( check_inside_image(p+q, v) )
 					syn.data[x+y*u.nx + c*u.npix] = v.data[x+q.x+(y+q.y)*v.nx + c*v.npix];
-				else 
+				else
 					syn.data[x+y*u.nx+ c*u.npix] = u.data[x+y*u.nx+ c*u.npix];
 		}
-	
-	iio_write_vector_split(f_out, out);
-	if(f_cost) iio_write_vector_split(f_cost, outcost);
-	if(f_back) iio_write_vector_split(f_back, syn);
-	
+
+	iio_write_vector_split(filename_out, out);
+	if(filename_cost) iio_write_vector_split(filename_cost, outcost);
+	if(filename_back) iio_write_vector_split(filename_back, syn);
+
 	return 0;
 }
